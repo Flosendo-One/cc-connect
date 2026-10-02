@@ -21,9 +21,9 @@ import (
 
 const (
 	// githubRepo is the GitHub owner/name from which self-update fetches
-	// releases. Unimount publishes its own builds rather than tracking
-	// upstream chenhg5/cc-connect releases.
-	githubRepo   = "Unimountltd/cc-connect"
+	// releases. Flosendo fork (EDEN-1313): our own copy, so an update never
+	// pulls a build we did not make (it was Unimountltd/cc-connect).
+	githubRepo   = "Flosendo-One/cc-connect"
 	githubAPI    = "https://api.github.com/repos/" + githubRepo + "/releases/latest"
 	githubAllAPI = "https://api.github.com/repos/" + githubRepo + "/releases"
 	githubTagAPI = "https://api.github.com/repos/" + githubRepo + "/releases/tags"

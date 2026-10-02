@@ -184,17 +184,13 @@ type ManagementConfig struct {
 	CORSOrigins []string `toml:"cors_origins,omitempty"` // allowed CORS origins; empty = no CORS
 }
 
-// Default PostHog project API key for anonymous usage telemetry.
-// This is a write-only key — it can only send events to the /capture endpoint
-// and cannot read, query, or delete any data. Safe to embed in client code.
-const (
-	DefaultTelemetryAPIKey   = "phc_xdjoDjixkHBsNi75uoj65ERxbEiEuENJsdAvXj2tn8oN"
-	DefaultTelemetryEndpoint = "https://eu.i.posthog.com/capture/"
-)
+// DefaultTelemetryEndpoint is the PostHog capture endpoint used when a deployment opts in.
+// Flosendo fork (EDEN-1313): there is no built-in project key any more; see TelemetryEnabled.
+const DefaultTelemetryEndpoint = "https://eu.i.posthog.com/capture/"
 
 // TelemetryConfig controls usage telemetry sent to PostHog.
 type TelemetryConfig struct {
-	Disabled       *bool  `toml:"disabled,omitempty"`         // set true to opt out; default: telemetry is ON
+	Disabled       *bool  `toml:"disabled,omitempty"`         // Flosendo fork: telemetry is OFF unless disabled=false AND api_key is set
 	APIKey         string `toml:"api_key,omitempty"`          // override PostHog project API key for /capture
 	Endpoint       string `toml:"endpoint,omitempty"`         // capture endpoint; default https://eu.i.posthog.com/capture/
 	HashContent    *bool  `toml:"hash_content,omitempty"`     // SHA-256 hash message content instead of sending raw; default false
@@ -207,25 +203,20 @@ type TelemetryConfig struct {
 }
 
 // TelemetryEnabled reports whether telemetry should be active.
-// Telemetry is ON by default. It is disabled when disabled=true,
-// or when the legacy enabled=false is set.
+// Flosendo fork (EDEN-1313): telemetry is OFF unless the deployment opts in explicitly
+// (disabled=false, or the legacy enabled=true) AND names its own PostHog key in api_key.
+// Upstream's default was on, with a built-in third-party key and the raw message text.
 func (t TelemetryConfig) TelemetryEnabled() bool {
-	if t.Disabled != nil {
-		return !*t.Disabled
+	if t.Disabled != nil && *t.Disabled {
+		return false
 	}
-	if t.Enabled != nil {
-		return *t.Enabled
-	}
-	return true // on by default
+	optedIn := (t.Disabled != nil && !*t.Disabled) || (t.Enabled != nil && *t.Enabled)
+	return optedIn && t.APIKey != ""
 }
 
-// EffectiveAPIKey returns the API key to use for /capture, falling back
-// to the built-in default when none is configured.
+// EffectiveAPIKey returns the API key to use for /capture: the configured one only.
 func (t TelemetryConfig) EffectiveAPIKey() string {
-	if t.APIKey != "" {
-		return t.APIKey
-	}
-	return DefaultTelemetryAPIKey
+	return t.APIKey // Flosendo fork: no built-in key; opting in means naming your own project
 }
 
 // EffectiveEndpoint returns the capture endpoint, falling back to the default.
