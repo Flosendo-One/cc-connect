@@ -342,3 +342,19 @@ func TestBuildOrphanRender_HeaderShape(t *testing.T) {
 		})
 	}
 }
+
+// TestUnsolicitedOutbound_HonoursNoReply: the engine's unsolicited-turn relay posts nothing for a bare
+// marker and drops a trailing one (Flosendo, 9 Oct 2026).
+func TestUnsolicitedOutbound_HonoursNoReply(t *testing.T) {
+	cases := map[string]string{
+		"NO_REPLY":                     "",
+		"  no_reply\n":                 "",
+		"All fine here.\nNO_REPLY":     "All fine here.",
+		"The deploy finished: OK.":     "The deploy finished: OK.",
+	}
+	for in, want := range cases {
+		if got := unsolicitedOutbound(in); got != want {
+			t.Fatalf("unsolicitedOutbound(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

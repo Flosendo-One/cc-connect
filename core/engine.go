@@ -5073,8 +5073,12 @@ func (e *Engine) runUnsolicitedReader(ctx context.Context, cancel context.Cancel
 					fullResponse = strings.Join(textParts, "")
 				}
 
-				if fullResponse != "" {
-					for _, chunk := range SplitMessageCodeFenceAware(fullResponse, maxPlatformMessageLen) {
+				// The NO_REPLY marker means "say nothing" on this path too (the orphan path and the
+				// normal turn path honour it): history keeps the original, the platform gets nothing for
+				// a bare marker and the reasoning without the marker for a trailing one (Flosendo).
+				outbound := unsolicitedOutbound(fullResponse)
+				if outbound != "" {
+					for _, chunk := range SplitMessageCodeFenceAware(outbound, maxPlatformMessageLen) {
 						e.send(p, replyCtx, chunk)
 					}
 				}
@@ -18084,6 +18088,18 @@ var silentReplyRe = regexp.MustCompile(`(?i)^\s*NO_REPLY\s*$`)
 // markdown emphasis (`*`). Lets agents that narrate their reasoning before the marker
 // still suppress the marker from the delivered text (mirroring OpenClaw's stripSilentToken).
 var silentReplyTrailingRe = regexp.MustCompile(`(?i)(?:^|\s+|\*+)NO_REPLY\s*$`)
+
+// unsolicitedOutbound is the text an unsolicited (idle) turn may post: "" for a bare NO_REPLY marker,
+// the reasoning without a trailing marker, else the text unchanged (Flosendo).
+func unsolicitedOutbound(text string) string {
+	if isSilentReply(strings.TrimSpace(text)) {
+		return ""
+	}
+	if stripped, ok := stripTrailingSilent(text); ok {
+		return strings.TrimSpace(stripped)
+	}
+	return text
+}
 
 // isSilentReply reports whether text is exactly a NO_REPLY marker.
 func isSilentReply(text string) bool {
