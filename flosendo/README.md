@@ -37,6 +37,7 @@ took the fork over, each with its test:
    adopted. Then `go vet ./core/ && nice go test -p 1 ./core/`. Our tests above must still pass.
 5. **Build and switch on** with `flosendo/deploy.sh`:
    - Before `switch`, every building session gives "restart ok" and has set itself a resume timer.
+   - `switch` and `rollback` refuse while a user's message is waiting in a busy session (`deploy.sh queued -` lists them): the bridge keeps that queue in memory, so a restart drops it (EDEN-1137, 9 Oct: Ivan's 12:20 message was lost to the 12:37 restart). Wait for it to be processed; `FORCE=1` only when the queue was emptied another way (a "stop" leaves no log line).
    - `build <version>` builds the version.
    - `switch <version>` points the systemd drop-in at it and restarts the bridge in 90 s, outside the
      service.
