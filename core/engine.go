@@ -1565,7 +1565,11 @@ func (e *Engine) ExecuteCronJob(job *CronJob) error {
 	// Notify user that a cron job is executing (unless silent/muted)
 	// Note: this notification uses targetPlatform directly, not the tracking wrapper,
 	// so it won't count as a "meaningful delivery" for empty response detection.
-	if !job.Mute {
+	// Flosendo: announced only when the job actually starts (after the turn lock for prompt jobs).
+	announce := func() {
+		if job.Mute {
+			return
+		}
 		silent := false
 		if e.cronScheduler != nil {
 			silent = e.cronScheduler.IsSilent(job)
@@ -1584,6 +1588,7 @@ func (e *Engine) ExecuteCronJob(job *CronJob) error {
 	}
 
 	if job.IsShellJob() {
+		announce()
 		return e.executeCronShell(effectivePlatform, replyCtx, job)
 	}
 
@@ -1651,9 +1656,10 @@ func (e *Engine) ExecuteCronJob(job *CronJob) error {
 	if useNewSession {
 		msg.SessionKey = runSessionKey
 		session := sessions.NewSideSession(runSessionKey, "cron-"+job.ID)
-		if !session.TryLock() {
-			return fmt.Errorf("session %q is busy", runSessionKey)
+		if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
+			return fmt.Errorf("session %q stayed busy for %v", runSessionKey, scheduledBusyWaitMax)
 		}
+		announce()
 		iKey := fmt.Sprintf("%s#cron:%s", runSessionKey, session.ID)
 		if workspaceDir != "" {
 			iKey = workspaceDir + ":" + iKey
@@ -1673,9 +1679,10 @@ func (e *Engine) ExecuteCronJob(job *CronJob) error {
 	}
 
 	session := sessions.GetOrCreateActive(sessionKey)
-	if !session.TryLock() {
-		return fmt.Errorf("session %q is busy", sessionKey)
+	if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
+		return fmt.Errorf("session %q stayed busy for %v", sessionKey, scheduledBusyWaitMax)
 	}
+	announce()
 
 	iKey := sessionKey
 	if workspaceDir != "" {
@@ -1767,8 +1774,12 @@ func (e *Engine) ExecuteTimerJob(job *TimerJob) error {
 		effectivePlatform = &mutePlatform{targetPlatform}
 	}
 
-	// Notify user unless muted or silent
-	if !job.Mute {
+	// Notify user unless muted or silent.
+	// Flosendo: announced only when the job actually starts (after the turn lock for prompt jobs).
+	announce := func() {
+		if job.Mute {
+			return
+		}
 		silent := false
 		if e.timerScheduler != nil {
 			silent = e.timerScheduler.IsSilent(job)
@@ -1787,6 +1798,7 @@ func (e *Engine) ExecuteTimerJob(job *TimerJob) error {
 	}
 
 	if job.IsShellJob() {
+		announce()
 		return e.executeTimerShell(effectivePlatform, replyCtx, job)
 	}
 
@@ -1852,9 +1864,10 @@ func (e *Engine) ExecuteTimerJob(job *TimerJob) error {
 	if useNewSession {
 		msg.SessionKey = runSessionKey
 		session := sessions.NewSideSession(runSessionKey, "timer-"+job.ID)
-		if !session.TryLock() {
-			return fmt.Errorf("session %q is busy", runSessionKey)
+		if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
+			return fmt.Errorf("session %q stayed busy for %v", runSessionKey, scheduledBusyWaitMax)
 		}
+		announce()
 		iKey := fmt.Sprintf("%s#timer:%s", runSessionKey, session.ID)
 		if workspaceDir != "" {
 			iKey = workspaceDir + ":" + iKey
@@ -1865,9 +1878,10 @@ func (e *Engine) ExecuteTimerJob(job *TimerJob) error {
 	}
 
 	session := sessions.GetOrCreateActive(sessionKey)
-	if !session.TryLock() {
-		return fmt.Errorf("session %q is busy", sessionKey)
+	if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
+		return fmt.Errorf("session %q stayed busy for %v", sessionKey, scheduledBusyWaitMax)
 	}
+	announce()
 
 	iKey := sessionKey
 	if workspaceDir != "" {
