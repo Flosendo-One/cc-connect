@@ -133,3 +133,75 @@ func TestExecuteTimerJob_GivesUpOnASessionThatStaysBusy(t *testing.T) {
 		t.Fatalf("a nudge that never ran must post nothing, got %q", sent)
 	}
 }
+
+// A nudge cancelled (timer deleted) or switched off (cron disabled or deleted) while it waits for a busy
+// session must not run when the session frees: the wait cannot outlive the person's decision.
+func TestExecuteTimerJob_CancelledWhileWaitingDoesNotRun(t *testing.T) {
+	withScheduledLockTiming(t, 5*time.Millisecond, 5*time.Second)
+	e, platform := newScheduledTestEngine(t)
+	store, err := NewTimerStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.timerScheduler = NewTimerScheduler(store)
+	key := "discord:channel-1:user-1"
+	session := e.sessions.GetOrCreateActive(key)
+	session.TryLock()
+	job := &TimerJob{ID: "t3", SessionKey: key, Prompt: "x", Description: "Nudge"}
+	if err := store.Add(job); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- e.ExecuteTimerJob(job) }()
+	time.Sleep(30 * time.Millisecond)
+	store.Remove("t3")
+	session.Unlock()
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(err.Error(), "cancelled while waiting") {
+			t.Fatalf("err = %v, want cancelled-while-waiting", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the cancelled timer did not return")
+	}
+	if sent := platform.getSent(); len(sent) != 0 {
+		t.Fatalf("a cancelled nudge must post nothing, got %q", sent)
+	}
+	if !session.TryLock() {
+		t.Fatal("the cancelled nudge left the session locked")
+	}
+}
+
+func TestExecuteCronJob_DisabledWhileWaitingDoesNotRun(t *testing.T) {
+	withScheduledLockTiming(t, 5*time.Millisecond, 5*time.Second)
+	e, platform := newScheduledTestEngine(t)
+	store, err := NewCronStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.cronScheduler = NewCronScheduler(store)
+	key := "discord:channel-1:user-1"
+	session := e.sessions.GetOrCreateActive(key)
+	session.TryLock()
+	job := &CronJob{ID: "c3", SessionKey: key, Prompt: "x", Description: "Daily", Enabled: true}
+	if err := store.Add(job); err != nil {
+		t.Fatal(err)
+	}
+	snapshot := *job
+	done := make(chan error, 1)
+	go func() { done <- e.ExecuteCronJob(&snapshot) }()
+	time.Sleep(30 * time.Millisecond)
+	store.SetEnabled("c3", false)
+	session.Unlock()
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(err.Error(), "cancelled while waiting") {
+			t.Fatalf("err = %v, want cancelled-while-waiting", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the disabled cron job did not return")
+	}
+	if sent := platform.getSent(); len(sent) != 0 {
+		t.Fatalf("a switched-off nudge must post nothing, got %q", sent)
+	}
+}

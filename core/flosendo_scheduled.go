@@ -28,3 +28,25 @@ func waitForScheduledTurnLock(s *Session, max, poll time.Duration) bool {
 		time.Sleep(poll)
 	}
 }
+
+// timerStillScheduled reports whether a timer that waited for its session is still wanted: a timer
+// deleted while it waited does not run (the wait must not outlive a cancellation).
+func (e *Engine) timerStillScheduled(job *TimerJob) bool {
+	if e.timerScheduler == nil || e.timerScheduler.store == nil {
+		return true
+	}
+	return e.timerScheduler.store.Get(job.ID) != nil
+}
+
+// cronStillScheduled is the same for a cron job: deleted, or switched off while it waited (a job that
+// was already disabled when it started is a manual run and stays allowed).
+func (e *Engine) cronStillScheduled(job *CronJob) bool {
+	if e.cronScheduler == nil || e.cronScheduler.store == nil {
+		return true
+	}
+	cur := e.cronScheduler.store.Get(job.ID)
+	if cur == nil {
+		return false
+	}
+	return !(job.Enabled && !cur.Enabled)
+}

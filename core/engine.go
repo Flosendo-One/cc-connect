@@ -1659,6 +1659,10 @@ func (e *Engine) ExecuteCronJob(job *CronJob) error {
 		if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
 			return fmt.Errorf("session %q stayed busy for %v", runSessionKey, scheduledBusyWaitMax)
 		}
+		if !e.cronStillScheduled(job) {
+			session.UnlockWithoutUpdate()
+			return fmt.Errorf("cron job %q was cancelled while waiting for its session", job.ID)
+		}
 		announce()
 		iKey := fmt.Sprintf("%s#cron:%s", runSessionKey, session.ID)
 		if workspaceDir != "" {
@@ -1681,6 +1685,10 @@ func (e *Engine) ExecuteCronJob(job *CronJob) error {
 	session := sessions.GetOrCreateActive(sessionKey)
 	if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
 		return fmt.Errorf("session %q stayed busy for %v", sessionKey, scheduledBusyWaitMax)
+	}
+	if !e.cronStillScheduled(job) {
+		session.UnlockWithoutUpdate()
+		return fmt.Errorf("cron job %q was cancelled while waiting for its session", job.ID)
 	}
 	announce()
 
@@ -1867,6 +1875,10 @@ func (e *Engine) ExecuteTimerJob(job *TimerJob) error {
 		if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
 			return fmt.Errorf("session %q stayed busy for %v", runSessionKey, scheduledBusyWaitMax)
 		}
+		if !e.timerStillScheduled(job) {
+			session.UnlockWithoutUpdate()
+			return fmt.Errorf("timer job %q was cancelled while waiting for its session", job.ID)
+		}
 		announce()
 		iKey := fmt.Sprintf("%s#timer:%s", runSessionKey, session.ID)
 		if workspaceDir != "" {
@@ -1880,6 +1892,10 @@ func (e *Engine) ExecuteTimerJob(job *TimerJob) error {
 	session := sessions.GetOrCreateActive(sessionKey)
 	if !waitForScheduledTurnLock(session, scheduledBusyWaitMax, scheduledLockPoll) {
 		return fmt.Errorf("session %q stayed busy for %v", sessionKey, scheduledBusyWaitMax)
+	}
+	if !e.timerStillScheduled(job) {
+		session.UnlockWithoutUpdate()
+		return fmt.Errorf("timer job %q was cancelled while waiting for its session", job.ID)
 	}
 	announce()
 
