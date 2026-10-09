@@ -303,6 +303,29 @@ func TestBuildOrphanRender_HeaderShape(t *testing.T) {
 			err:  errors.New("boom"),
 			want: "💤 *Scheduled wakeup*\n_failed: boom_",
 		},
+		// The NO_REPLY marker means "say nothing" on the idle path too: a turn woken by a peer
+		// session or a finished background job and answered with silence must not post the marker
+		// (Ivan, 9 Oct 2026: a day of "Scheduled wakeup / NO_REPLY" messages in Slack).
+		{
+			name:     "bare NO_REPLY",
+			turn:     &orphanTurn{text: []string{"NO_REPLY"}},
+			wantNone: true,
+		},
+		{
+			name:     "NO_REPLY after tools",
+			turn:     &orphanTurn{text: []string{"NO_REPLY"}, toolCount: 3},
+			wantNone: true,
+		},
+		{
+			name:     "lower-case marker split across chunks",
+			turn:     &orphanTurn{text: []string{"no_", "reply\n"}},
+			wantNone: true,
+		},
+		{
+			name: "reasoning then trailing NO_REPLY",
+			turn: &orphanTurn{text: []string{"Checked the test site: all fine.\nNO_REPLY"}, toolCount: 2},
+			want: "💤 *Scheduled wakeup* — used 2 tools\nChecked the test site: all fine.",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

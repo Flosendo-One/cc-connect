@@ -248,6 +248,21 @@ func (sm *SessionManager) byKey(key string) *Session {
 // header style is consistent and easy to tweak.
 func buildOrphanRender(turn *orphanTurn, errOpt error) string {
 	body := strings.TrimSpace(strings.Join(turn.text, ""))
+	// A NO_REPLY marker means "say nothing" here exactly as on a normal turn (engine.go's
+	// isSilentReply / stripTrailingSilent): an idle turn woken by a peer session or a finished
+	// background job, answered with silence, posts nothing; reasoning before a trailing marker is
+	// delivered without it. Without this, every silent idle turn posted "Scheduled wakeup /
+	// NO_REPLY" to the channel (Flosendo, 9 Oct 2026).
+	silent := false
+	if isSilentReply(body) {
+		body, silent = "", true
+	} else if stripped, ok := stripTrailingSilent(body); ok {
+		body = strings.TrimSpace(stripped)
+		silent = body == ""
+	}
+	if silent && errOpt == nil {
+		return ""
+	}
 	header := "💤 *Scheduled wakeup*"
 	if turn.toolCount > 0 {
 		header += fmt.Sprintf(" — used %d tool%s", turn.toolCount, plural(turn.toolCount))
