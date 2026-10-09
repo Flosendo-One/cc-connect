@@ -347,10 +347,10 @@ func TestBuildOrphanRender_HeaderShape(t *testing.T) {
 // marker and drops a trailing one (Flosendo, 9 Oct 2026).
 func TestUnsolicitedOutbound_HonoursNoReply(t *testing.T) {
 	cases := map[string]string{
-		"NO_REPLY":                     "",
-		"  no_reply\n":                 "",
-		"All fine here.\nNO_REPLY":     "All fine here.",
-		"The deploy finished: OK.":     "The deploy finished: OK.",
+		"NO_REPLY":                 "",
+		"  no_reply\n":             "",
+		"All fine here.\nNO_REPLY": "All fine here.",
+		"The deploy finished: OK.": "The deploy finished: OK.",
 	}
 	for in, want := range cases {
 		if got := unsolicitedOutbound(in); got != want {
