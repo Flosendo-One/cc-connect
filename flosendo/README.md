@@ -43,6 +43,18 @@ took the fork over, each with its test:
    - `verify <version>` checks the service is active, on that binary, with its schedulers started.
    - `rollback <previous>` goes back if verify fails.
 
+**First scoring, 9 Oct 2026:** upstream had 63 commits since our last merge (`b39c11f4`), 59 of them
+non-merge, and all 59 have a verdict:
+- 0 adopt;
+- 1 watch (`781ead2b`, the busy-lock self-heal);
+- 1 declined (`48f8a399`, which would stall unattended runs on a question);
+- 7 feature-off;
+- 2 have-equivalent;
+- 33 not-used;
+- 15 low-value.
+
+(Commit `3dd5139d`'s message says "63" and "19 low-value". These counts are the correct ones.)
+
 The weekly check (a cc-connect cron in #eden-two, Mondays 08:00 UTC) runs `upstream_report.py
 --quiet`. It writes to Ivan only when an undecided upstream commit touches what we use.
 
