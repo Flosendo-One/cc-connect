@@ -205,7 +205,7 @@
     "781ead2b": {
       "subject": "fix(core): generation-counted session busy lock with stale-break self-heal and stop-path release (#1838)",
       "verdict": "watch",
-      "why": "Busy-lock self-heal (generation-counted TryLock). Protective against a leaked busy flag; no stuck session seen in our logs (queued Slack messages all processed). Large (+728/-171), touches 6 files we patched and every Unlock site, and changes TryLock's signature (our nudge fix 6ed03c23 calls it). Adopt if a session ever stays busy until a restart."
+      "why": "Busy-lock self-heal (generation-counted TryLock; breaks a lock held past busy_timeout when the agent process is dead). CORRECTION 9 Oct 2026: the symptom HAS happened to us - EDEN-1137 records two full freezes (#eden-dev 11 Sep, #eden-two 22 Sep: a session stuck busy, Ivan's messages queued until a restart), and its warning sign (\"orphan: rendering without session lock\") fired 8 times on 9 Oct. Being scored under EDEN-1137 against a smaller fork-local fix: large (+728/-171), touches 6 files we patched and every Unlock site, and changes TryLock's signature (our nudge fix 6ed03c23/79cfad75 calls it)."
     },
     "091420be": {
       "subject": "fix(claudecode,core): drive auto-compress from exact transcript usage, gate heuristic behind allow_heuristic (#1845)",

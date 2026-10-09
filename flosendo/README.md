@@ -46,7 +46,7 @@ took the fork over, each with its test:
 **First scoring, 9 Oct 2026:** upstream had 63 commits since our last merge (`b39c11f4`), 59 of them
 non-merge, and all 59 have a verdict:
 - 0 adopt;
-- 1 watch (`781ead2b`, the busy-lock self-heal);
+- 1 watch (`781ead2b`, the busy-lock self-heal: being scored under EDEN-1137, which records two full freezes. The first verdict said we had never seen the symptom, and that was wrong);
 - 1 declined (`48f8a399`, which would stall unattended runs on a question);
 - 7 feature-off;
 - 2 have-equivalent;
