@@ -1,0 +1,301 @@
+{
+  "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
+  "decided_at": "2026-10-09",
+  "commits": {
+    "dfad1941": {
+      "subject": "fix(codex): discover current and legacy macOS desktop CLIs (#1928)",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "1d38af3f": {
+      "subject": "fix(core): derive workspace session store from the engine store path (#1926)",
+      "verdict": "feature-off",
+      "why": "Workspace session store path: multi-workspace mode is off."
+    },
+    "f8acb2c6": {
+      "subject": "fix(cron): render CRON_TZ schedules in their own timezone in /cron output (#1922)",
+      "verdict": "feature-off",
+      "why": "CRON_TZ rendering: we use no CRON_TZ."
+    },
+    "4b72beff": {
+      "subject": "fix(kimi): restore CLI session history and model discovery (#1916)",
+      "verdict": "not-used",
+      "why": "For agent/kimi, which we do not run (Slack + Claude Code only)."
+    },
+    "dd93245b": {
+      "subject": "feat(web): manage multi-workspace mode and channel bindings from the dashboard (#1772)",
+      "verdict": "feature-off",
+      "why": "Web dashboard: we build with no_web."
+    },
+    "5f086d90": {
+      "subject": "fix(feishu): include top-level files in rich-text (post) messages (#1884) (#1888)",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "a8cb3960": {
+      "subject": "fix(dingtalk): detect quoted/reply messages in richText path (#1912)",
+      "verdict": "not-used",
+      "why": "For platform/dingtalk, which we do not run (Slack + Claude Code only)."
+    },
+    "4ce87096": {
+      "subject": "fix(copilot): expose skill roots to cc-connect (#1913)",
+      "verdict": "not-used",
+      "why": "For agent/copilot, which we do not run (Slack + Claude Code only)."
+    },
+    "b9c8715f": {
+      "subject": "fix(daemon): restart loaded launchd job without bootout (#1915)",
+      "verdict": "not-used",
+      "why": "macOS launchd daemon: we run under systemd."
+    },
+    "c7aaf999": {
+      "subject": "docs: document card_mode option in config example (#1191)",
+      "verdict": "low-value",
+      "why": "Docs only."
+    },
+    "43a94aa9": {
+      "subject": "fix(feishu): stop replying to unauthorized users for messages overheard via group_reply_all (#1539)",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "38f8e5dd": {
+      "subject": "Fix/data dir home fallback (#1514)",
+      "verdict": "low-value",
+      "why": "Data dir home fallback: our data_dir is set."
+    },
+    "c3a6a25e": {
+      "subject": "feat(claudecode): add context_window_tokens option for ctx% indicator (#1823) (#1827)",
+      "verdict": "low-value",
+      "why": "context_window_tokens option: the fork already sizes ctx% per model (52d15aeb); converge only if we touch that code."
+    },
+    "82d8d5f1": {
+      "subject": "feat(codex): extend GPT-5.6 reasoning and fallback support (#1815)",
+      "verdict": "not-used",
+      "why": "Mainly for agent/codex; its core part only serves that integration."
+    },
+    "fc49da96": {
+      "subject": "fix(core): render Feishu AskUserQuestion as flat action rows (fixes #1658) (#1679)",
+      "verdict": "not-used",
+      "why": "Renders AskUserQuestion as flat rows for Feishu cards; core change serves Feishu only."
+    },
+    "4c68a2a6": {
+      "subject": "feat(wecom): support private WeChat Work WebSocket deployment (#1703)",
+      "verdict": "not-used",
+      "why": "For platform/wecom, which we do not run (Slack + Claude Code only)."
+    },
+    "8c6c3567": {
+      "subject": "fix(weixin): skip empty text items in bodyFromItemList so voice transcription survives (#975)",
+      "verdict": "not-used",
+      "why": "For platform/weixin, which we do not run (Slack + Claude Code only)."
+    },
+    "be217955": {
+      "subject": "fix: 增加钉钉 AI Card 完成后的预览消息开关 (#1787)",
+      "verdict": "not-used",
+      "why": "For platform/dingtalk, which we do not run (Slack + Claude Code only)."
+    },
+    "e48b4d41": {
+      "subject": "fix(build): normalize dash → underscore in AGENTS / PLATFORMS_INCLUDE / EXCLUDE (#1033)",
+      "verdict": "low-value",
+      "why": "Makefile include/exclude normalisation: we build one target."
+    },
+    "922e64ab": {
+      "subject": "chore(core): 对齐 stale-lock 测试注释 (#1883)",
+      "verdict": "low-value",
+      "why": "Comment only."
+    },
+    "bdbb3468": {
+      "subject": "fix(codex): reject concurrent exec turns (#1881)",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "a230774a": {
+      "subject": "docs: add international Kimi Code link alongside domestic subscription link (#1876)",
+      "verdict": "low-value",
+      "why": "Docs only."
+    },
+    "da912c51": {
+      "subject": "fix(dingtalk): forward inline images in richText messages (#1626)",
+      "verdict": "not-used",
+      "why": "For platform/dingtalk, which we do not run (Slack + Claude Code only)."
+    },
+    "e0b45eaa": {
+      "subject": "fix(qqbot): forward quoted image attachments to agents (#1806)",
+      "verdict": "not-used",
+      "why": "Mainly for platform/qqbot; its core part only serves that integration."
+    },
+    "78708269": {
+      "subject": "fix(dingtalk): route group attachments to group API (#1903)",
+      "verdict": "not-used",
+      "why": "For platform/dingtalk, which we do not run (Slack + Claude Code only)."
+    },
+    "941b1cc8": {
+      "subject": "fix(slack): dedup a message delivered as both app_mention and message (#1822)",
+      "verdict": "have-equivalent",
+      "why": "Slack app_mention/message dedup: the fork has it as e0e34dc9 (Jim, 10 Sep)."
+    },
+    "73ea5972": {
+      "subject": "test(core): cover DirHistory move-to-front, trim, persistence, bounds (#1663)",
+      "verdict": "low-value",
+      "why": "Tests for DirHistory: tests only."
+    },
+    "3ecaf7a5": {
+      "subject": "test: fix flaky t.TempDir cleanup race in media pipeline and cron tests (#1911)",
+      "verdict": "low-value",
+      "why": "Flaky test cleanup: tests only."
+    },
+    "48f8a399": {
+      "subject": "fix(claudecode): preserve AskUserQuestion in bypass modes (#1880)",
+      "verdict": "declined",
+      "why": "AskUserQuestion stays interactive in bypass mode: our agents run unattended in bypass mode, so a question would stop an overnight run until Ivan answers. Declined for that consequence."
+    },
+    "3194660a": {
+      "subject": "fix(codex): persist session ID on thread start (#1623)",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "089fcba9": {
+      "subject": "fix(feishu): enforce allow_from in onCardAction() (closes #1852) (#1854)",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "22ef60fe": {
+      "subject": "fix(core): invalidate stale workspace sessions (#1699) (#1699)",
+      "verdict": "feature-off",
+      "why": "Stale workspace sessions: multi-workspace mode is off."
+    },
+    "4127c3d3": {
+      "subject": "fix(core): persist late session ID on turn error (#1901)",
+      "verdict": "low-value",
+      "why": "Late session ID on turn error: the case is a backend that creates its session before failing (Codex); Claude Code reports the ID at start and our fork retries rate-limited turns itself."
+    },
+    "44d28082": {
+      "subject": "fix(core): lock CommandRegistry.agentDirs in SetAgentDirs and Resolve (#1662)",
+      "verdict": "low-value",
+      "why": "CommandRegistry lock: latent race, no runtime re-bind in our use."
+    },
+    "a5c93d9c": {
+      "subject": "fix(core): never write temp files in target directory (fixes t.TempDir cleanup) (#1777)",
+      "verdict": "low-value",
+      "why": "Temp files in tests: test hygiene only."
+    },
+    "7e03efa7": {
+      "subject": "feat(max): make inbound attachment download cap configurable (#1837)",
+      "verdict": "not-used",
+      "why": "For platform/max, which we do not run (Slack + Claude Code only)."
+    },
+    "4c56ca0c": {
+      "subject": "fix(daemon): fall back to ~/.cc-connect/config.toml in daemon install (#1784)",
+      "verdict": "not-used",
+      "why": "Daemon install config fallback: we install by systemd drop-in."
+    },
+    "719e7b80": {
+      "subject": "fix(cursor): parse result event usage so reply footer renders (#1810) (#1811)",
+      "verdict": "not-used",
+      "why": "For agent/cursor, which we do not run (Slack + Claude Code only)."
+    },
+    "685d9b53": {
+      "subject": "fix(claudecode): convert JSONL timestamps to local timezone in /history fallback (#1780) (#1788)",
+      "verdict": "low-value",
+      "why": "/history timestamps in local time: cosmetic, we do not use /history."
+    },
+    "6b7f4831": {
+      "subject": "fix(config): expand ~ in work_dir and base_dir (#1785)",
+      "verdict": "low-value",
+      "why": "~ in work_dir: our config uses absolute paths."
+    },
+    "781ead2b": {
+      "subject": "fix(core): generation-counted session busy lock with stale-break self-heal and stop-path release (#1838)",
+      "verdict": "watch",
+      "why": "Busy-lock self-heal (generation-counted TryLock). Protective against a leaked busy flag; no stuck session seen in our logs (queued Slack messages all processed). Large (+728/-171), touches 6 files we patched and every Unlock site, and changes TryLock's signature (our nudge fix 6ed03c23 calls it). Adopt if a session ever stays busy until a restart."
+    },
+    "091420be": {
+      "subject": "fix(claudecode,core): drive auto-compress from exact transcript usage, gate heuristic behind allow_heuristic (#1845)",
+      "verdict": "feature-off",
+      "why": "Auto-compress from transcript usage: auto_compress is not configured for us."
+    },
+    "1402ba3b": {
+      "subject": "fix(skills): scope workspace discovery, honor Codex catalog, and fix Pi roots (#1842)",
+      "verdict": "not-used",
+      "why": "Mainly for agent/codex, agent/pi; its core part only serves that integration."
+    },
+    "4c7ad520": {
+      "subject": "fix(core): lock replacement session before releasing the old one in idle auto-reset (#1847)",
+      "verdict": "feature-off",
+      "why": "Idle auto-reset lock order: reset_on_idle_mins is not set (resetOnIdle <= 0, off)."
+    },
+    "28b4bab0": {
+      "subject": "fix(kimi): filter sessions using current cwd metadata (#1840)",
+      "verdict": "not-used",
+      "why": "For agent/kimi, which we do not run (Slack + Claude Code only)."
+    },
+    "9355354f": {
+      "subject": "fix(claudecode): drop Stop-hook-rejected draft from aggregated reply (#1855)",
+      "verdict": "feature-off",
+      "why": "Stop-hook-rejected drafts: our only Stop hook is advisory and never blocks (0 \"Stop hook feedback\" in our logs)."
+    },
+    "aeed25da": {
+      "subject": "feat(wps-xiezuo): support chat attachments and cloud documents (#1850)",
+      "verdict": "not-used",
+      "why": "For platform/wps-xiezuo, which we do not run (Slack + Claude Code only)."
+    },
+    "40a67d74": {
+      "subject": "feat(copilot): forward tool execution and reasoning events to the engine (#1844)",
+      "verdict": "not-used",
+      "why": "For agent/copilot, which we do not run (Slack + Claude Code only)."
+    },
+    "88ea029b": {
+      "subject": "fix(opencode): propagate project-level env to multi-workspace agents (#1849)",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "757b4df0": {
+      "subject": "fix(cron): cap timer span to 30s to recover from system sleep (#1808)",
+      "verdict": "low-value",
+      "why": "Cron sleep recovery replaces the cron loop: the dev box is a server that never sleeps; a scheduler rewrite (+663/-53) for no gain."
+    },
+    "312144c2": {
+      "subject": "fix(codex): don't pass --listen for stdio app-server transport (#1786)",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "3a6534d5": {
+      "subject": "feat(feishu): acknowledge accepted messages with an optional receipt reaction (#1812)",
+      "verdict": "not-used",
+      "why": "Mainly for platform/feishu; its core part only serves that integration."
+    },
+    "4000b233": {
+      "subject": "feat(feishu): share group chat context on mention (#1698)",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "87b80f1a": {
+      "subject": "fix(copilot): send enableConfigDiscovery so skills load (#1770)",
+      "verdict": "not-used",
+      "why": "For agent/copilot, which we do not run (Slack + Claude Code only)."
+    },
+    "805a440f": {
+      "subject": "fix(pi): add cross-platform test for session dir path encoding",
+      "verdict": "not-used",
+      "why": "For agent/pi, which we do not run (Slack + Claude Code only)."
+    },
+    "a8010edc": {
+      "subject": "fix(pi): replace \\ and : in Windows session dir path",
+      "verdict": "not-used",
+      "why": "For agent/pi, which we do not run (Slack + Claude Code only)."
+    },
+    "f269e6fe": {
+      "subject": "fix(slack): add working-indicator reactions to the triggering message, not the thread root",
+      "verdict": "have-equivalent",
+      "why": "Slack reactions on the triggering message: the fork has it as 6014aade."
+    },
+    "fe28736c": {
+      "subject": "docs: remove duplicate permission entry for im:message.p2p_msg:readonly",
+      "verdict": "low-value",
+      "why": "Docs only."
+    },
+    "b2df529a": {
+      "subject": "fix(feishu): extract hr element as standalone '---' in quoted posts (fixes #508)",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    }
+  }
+}

@@ -1,5 +1,8 @@
 # Unimount Fork Features
 
+> Since 2 Oct 2026 this fork is Flosendo's (`Flosendo-One/cc-connect`, EDEN-1313). Flosendo's own
+> changes, and how upstream changes are scored before any is taken, are in `flosendo/README.md`.
+
 Features added in the `unimountltd/cc-connect` fork on top of `chenhg5/cc-connect`.
 Listed roughly newest-first within each section. Commit hashes link to fork history.
 
