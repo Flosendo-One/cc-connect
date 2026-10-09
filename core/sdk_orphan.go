@@ -247,19 +247,9 @@ func (sm *SessionManager) byKey(key string) *Session {
 // single message body suitable for a platform Send. Kept centralized so the
 // header style is consistent and easy to tweak.
 func buildOrphanRender(turn *orphanTurn, errOpt error) string {
-	body := strings.TrimSpace(strings.Join(turn.text, ""))
-	// A NO_REPLY marker means "say nothing" here exactly as on a normal turn (engine.go's
-	// isSilentReply / stripTrailingSilent): an idle turn woken by a peer session or a finished
-	// background job, answered with silence, posts nothing; reasoning before a trailing marker is
-	// delivered without it. Without this, every silent idle turn posted "Scheduled wakeup /
-	// NO_REPLY" to the channel (Flosendo, 9 Oct 2026).
-	silent := false
-	if isSilentReply(body) {
-		body, silent = "", true
-	} else if stripped, ok := stripTrailingSilent(body); ok {
-		body = strings.TrimSpace(stripped)
-		silent = body == ""
-	}
+	// Flosendo: blocks joined as paragraphs, and the NO_REPLY marker honoured (bare: nothing posts;
+	// trailing, even glued to the sentence before it: dropped). See core/flosendo_silent.go.
+	body, silent := flosendoIdleOutbound(flosendoJoinBlocks(turn.text))
 	if silent && errOpt == nil {
 		return ""
 	}

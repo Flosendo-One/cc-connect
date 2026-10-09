@@ -317,9 +317,30 @@ func TestBuildOrphanRender_HeaderShape(t *testing.T) {
 			wantNone: true,
 		},
 		{
-			name:     "lower-case marker split across chunks",
-			turn:     &orphanTurn{text: []string{"no_", "reply\n"}},
+			name:     "lower-case marker as its own block",
+			turn:     &orphanTurn{text: []string{"no_reply\n"}},
 			wantNone: true,
+		},
+		{
+			// #eden-dev, 9 Oct 2026: the closing block arrived glued to the sentence before it.
+			name: "marker glued to the sentence before it",
+			turn: &orphanTurn{text: []string{"No browser until it's done).NO_REPLY"}, toolCount: 3},
+			want: "💤 *Scheduled wakeup* — used 3 tools\nNo browser until it's done).",
+		},
+		{
+			name: "blocks are paragraphs, and a closing NO_REPLY block is dropped",
+			turn: &orphanTurn{text: []string{"Building it.", "Now the tests first.", "NO_REPLY"}, toolCount: 2},
+			want: "💤 *Scheduled wakeup* — used 2 tools\nBuilding it.\n\nNow the tests first.",
+		},
+		{
+			name: "a word ending in _NO_REPLY is not the marker",
+			turn: &orphanTurn{text: []string{"Set FLAG_NO_REPLY"}},
+			want: "💤 *Scheduled wakeup*\nSet FLAG_NO_REPLY",
+		},
+		{
+			name: "tool-only turn still shows",
+			turn: &orphanTurn{toolCount: 1},
+			want: "💤 *Scheduled wakeup* — used 1 tool\n_(no text response)_",
 		},
 		{
 			name: "reasoning then trailing NO_REPLY",
@@ -347,6 +368,7 @@ func TestBuildOrphanRender_HeaderShape(t *testing.T) {
 // marker and drops a trailing one (Flosendo, 9 Oct 2026).
 func TestUnsolicitedOutbound_HonoursNoReply(t *testing.T) {
 	cases := map[string]string{
+		"Done.NO_REPLY":            "Done.",
 		"NO_REPLY":                 "",
 		"  no_reply\n":             "",
 		"All fine here.\nNO_REPLY": "All fine here.",

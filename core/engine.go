@@ -18119,16 +18119,10 @@ var silentReplyRe = regexp.MustCompile(`(?i)^\s*NO_REPLY\s*$`)
 // still suppress the marker from the delivered text (mirroring OpenClaw's stripSilentToken).
 var silentReplyTrailingRe = regexp.MustCompile(`(?i)(?:^|\s+|\*+)NO_REPLY\s*$`)
 
-// unsolicitedOutbound is the text an unsolicited (idle) turn may post: "" for a bare NO_REPLY marker,
-// the reasoning without a trailing marker, else the text unchanged (Flosendo).
+// unsolicitedOutbound is the text an unsolicited (idle) turn may post (Flosendo; core/flosendo_silent.go).
 func unsolicitedOutbound(text string) string {
-	if isSilentReply(strings.TrimSpace(text)) {
-		return ""
-	}
-	if stripped, ok := stripTrailingSilent(text); ok {
-		return strings.TrimSpace(stripped)
-	}
-	return text
+	out, _ := flosendoIdleOutbound(text)
+	return out
 }
 
 // isSilentReply reports whether text is exactly a NO_REPLY marker.

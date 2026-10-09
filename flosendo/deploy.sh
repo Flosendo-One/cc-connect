@@ -49,9 +49,11 @@ CONF
     systemctl --user show cc-connect -p ExecStart | grep -q "$BIN" || { echo "FAIL ExecStart is not $BIN"; ok=0; }
     pgrep -f "^$BIN" >/dev/null || { echo "FAIL no running process from $BIN"; ok=0; }
     since="$(systemctl --user show cc-connect -p ActiveEnterTimestamp --value)"
-    log="$HOME/.cc-connect/logs/cc-connect.log"
+    logs="$HOME/.cc-connect/logs"
     start_iso="$(date -u -d "$since" +%Y-%m-%dT%H:%M:%S)"
-    awk -v s="$start_iso" -F'time=' '{ if (substr($2,1,19) >= s) print }' "$log" > /tmp/cc-connect-since-restart.log
+    # the bridge rotates its log at 10 MB, so the restart's lines may already be in cc-connect.log.1
+    cat "$logs/cc-connect.log.1" "$logs/cc-connect.log" 2>/dev/null \
+      | awk -v s="$start_iso" -F'time=' '{ if (substr($2,1,19) >= s) print }' > /tmp/cc-connect-since-restart.log
     grep -q 'timer: scheduler started' /tmp/cc-connect-since-restart.log || { echo "FAIL timer scheduler did not start"; ok=0; }
     if grep -qE 'level=ERROR.*(panic|fatal)' /tmp/cc-connect-since-restart.log; then echo "FAIL fatal error since restart"; ok=0; fi
     [ $ok = 1 ] && echo "OK $ver running since $since" || { echo "verify FAILED: roll back with flosendo/deploy.sh rollback <previous>"; exit 1; }
