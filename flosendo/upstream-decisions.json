@@ -1,7 +1,97 @@
 {
   "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
-  "decided_at": "2026-10-09",
+  "decided_at": "2026-10-19",
   "commits": {
+    "961655de": {
+      "subject": "fix(core): count queued user messages toward reset_on_idle_mins",
+      "verdict": "feature-off",
+      "why": "Queued messages restart the reset_on_idle_mins clock: reset_on_idle_mins is not set (resetOnIdle <= 0, off), and LastUserActivity is read by nothing else."
+    },
+    "8804501d": {
+      "subject": "fix(core): stop clearing history on card-driven /switch",
+      "verdict": "not-used",
+      "why": "History cleared after a /switch made from the /list card: our Slack platform has no interactive cards (no card-action handler; 0 block_actions events in the logs since 30 Sep), and a typed /switch already keeps the history. /list and /switch were not used (audit log since 30 Sep: /new 28, /stop 2)."
+    },
+    "6ed762d3": {
+      "subject": "docs(claudecode): describe where the ctx % window comes from",
+      "verdict": "low-value",
+      "why": "Comments and the config example for the ctx % window of c3a6a25e and 93b3a5da, neither of which we have taken. Docs only."
+    },
+    "93b3a5da": {
+      "subject": "fix(claudecode): use the context window Claude Code reports for ctx %",
+      "verdict": "low-value",
+      "why": "ctx % from the window Claude Code reports. The bug is ours too (claude-opus-5-5 is measured against 200k; 79-93% of calls in three bridge sessions, 8-19 Oct, were over 200k, so the footer would read ctx 100%), but we never show that footer: our Slack turns finish through the streaming card, which carries none (472 of 504 turns since 30 Sep; 0 footers in the last 600 messages of #eden-dev, #eden-two and the Linear-only channel). Does not apply without c3a6a25e, which conflicts too. Take all three (c3a6a25e, 93b3a5da, 6ed762d3) only if the footer is ever shown."
+    },
+    "4de2b801": {
+      "subject": "fix(main): ignore project-wide work_dir override in multi-workspace mode",
+      "verdict": "feature-off",
+      "why": "Project-wide /dir override ignored in multi-workspace mode: multi-workspace mode is off, and projects/eden.state.json holds no work_dir override (inject_prompts only). Single-workspace behaviour is unchanged."
+    },
+    "4069baf1": {
+      "subject": "fix(core): keep workspace bindings scoped to the platform's thread",
+      "verdict": "feature-off",
+      "why": "Workspace bindings per thread: every change sits behind multi-workspace mode (off: no mode or base_dir, agent work_dir set) or Feishu's thread keys; applySessionFilter returns the list unchanged outside multi-workspace. Large (+539/-26), shares engine.go, interfaces.go and session.go with our patches, and does not apply cleanly."
+    },
+    "bb732fa8": {
+      "subject": "fix(acp): map agent_thought_chunk to thinking events",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "4aee1ce6": {
+      "subject": "test: make the Windows test suite runnable",
+      "verdict": "not-used",
+      "why": "Makes the test suite run on Windows (build tag, stderr pipe drain, native paths): we build and test on Linux. Tests only."
+    },
+    "987f454f": {
+      "subject": "fix(daemon): reap the leftover child process on stop, restart and install",
+      "verdict": "not-used",
+      "why": "Reaps the child left behind by `cc-connect daemon stop/restart/install`, a Windows scheduled-task problem: we never use the daemon subcommands. systemd runs the binary directly and stops its whole cgroup, and all 9 starts since 1 Oct took the instance lock at once."
+    },
+    "11141300": {
+      "subject": "fix(daemon): stop TestMetaSaveLoad clobbering the real daemon.json",
+      "verdict": "low-value",
+      "why": "Test only: on Windows TestMetaSaveLoad wrote into the real daemon.json because only HOME was redirected; on Linux HOME is enough (ours is unchanged since its 14 Apr install)."
+    },
+    "46a41e3e": {
+      "subject": "fix(codex): prevent concurrent image attachment overwrites",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "dfce0000": {
+      "subject": "fix(core): preserve numbers, commands, and distinct references",
+      "verdict": "feature-off",
+      "why": "Local-reference rendering (keep numbers, slash commands and distinct links): it renders only for feishu and weixin, and only when [references] names agents and platforms; our config has no [references] section, so it is off."
+    },
+    "7c7c0e8a": {
+      "subject": "Revert \"test(core): wait for cron persistence before cleanup\"",
+      "verdict": "low-value",
+      "why": "Reverts d405d597; the pair nets to no change."
+    },
+    "d405d597": {
+      "subject": "test(core): wait for cron persistence before cleanup",
+      "verdict": "low-value",
+      "why": "Test only (waits for the cron store write before cleanup), reverted upstream by 7c7c0e8a; the fork has its own wait (644e3afa)."
+    },
+    "44fac846": {
+      "subject": "test(codex): cover non-UTC history timestamps",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "8f0701e6": {
+      "subject": "style(codex): use role switch for session summary",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "dac61603": {
+      "subject": "fix(codex): surface corrupt history at user entry points",
+      "verdict": "low-value",
+      "why": "Mainly for agent/codex; its core part makes /history and the history card say \"Failed to read session history\" instead of showing nothing when the transcript cannot be read. We do not use /history (audit log since 30 Sep: /new 28, /stop 2), and it does not apply cleanly."
+    },
+    "48c4243c": {
+      "subject": "fix(codex): read large session history records reliably",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
     "dfad1941": {
       "subject": "fix(codex): discover current and legacy macOS desktop CLIs (#1928)",
       "verdict": "not-used",
