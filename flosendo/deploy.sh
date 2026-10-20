@@ -34,7 +34,8 @@ queued_messages() {
   # Each file only if present: under pipefail a missing cc-connect.log.1 (no rotation yet) would end the script silently.
   { for f in "$logs/cc-connect.log.1" "$logs/cc-connect.log"; do [ -f "$f" ] && cat "$f"; done; true; } | awk -v cutoff="$cutoff" '
     /msg="cc-connect is running"/ { delete depth; delete since; next }
-    /msg="message queued for busy session"/ || /msg="processing queued message"/ {
+    # EDEN-1618: a queue taken by a reset, an idle kill (replayed) or a stop (saved) logs remaining_queue=0 too.
+    /msg="message queued for busy session"/ || /msg="processing queued message"/ || /msg="queued messages (dropped|replayed after idle kill|saved at stop)"/ {
       t = $1; sub(/^time=/, "", t); if (substr(t, 1, 19) < cutoff) next
       match($0, /session=[^ ]+/); k = substr($0, RSTART + 8, RLENGTH - 8)
       if ($0 ~ /queue_depth=/) { match($0, /queue_depth=[0-9]+/); depth[k] = substr($0, RSTART + 12, RLENGTH - 12) + 0; if (!(k in since)) since[k] = t }

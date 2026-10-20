@@ -17,6 +17,7 @@ took the fork over, each with its test:
 | `a054387f` | The same on the engine's unsolicited relay | `TestUnsolicitedOutbound_HonoursNoReply` |
 | `6ed03c23` | A nudge that meets a busy session waits (up to 3 h) and runs; "⏰" posts only when it starts | `core/flosendo_scheduled_test.go` |
 | `79cfad75` | A nudge cancelled or switched off while it waits does not run | `core/flosendo_scheduled_test.go` |
+| EDEN-1618 | A message queued behind a busy session is never lost unseen: an idle kill hands it to a fresh session (and posts to `alert_session_key`); a reset says "Not processed" in its thread, quoting it; a restart saves the queue and says the same after; `deploy.sh queued` reads the drops | `core/flosendo_queue_test.go`, `platform/slack/flosendo_reply_target_test.go`, `flosendo/test_queued.sh` |
 
 ## Taking an upstream change: score, decide, then build
 

@@ -114,6 +114,9 @@ type Config struct {
 	Hooks              []HookConfig            `toml:"hooks"`
 	IdleTimeoutMins    *int                    `toml:"idle_timeout_mins,omitempty"`  // max minutes between consecutive agent events; 0 = no timeout; default 120
 	MaxTurnTimeMins    *int                    `toml:"max_turn_time_mins,omitempty"` // absolute wall-clock cap per turn in minutes; 0 = disabled (default)
+	// AlertSessionKey is where the bridge posts its own alerts, e.g. an idle kill (EDEN-1618), as a session key its
+	// platform can reconstruct ("slack:<channel id>"). Empty: no alerts.
+	AlertSessionKey string `toml:"alert_session_key,omitempty"`
 	// WorkspaceIdleTimeoutMins controls the workspace idle reaper timeout
 	// (multi-workspace mode) for every engine in the process. 0 disables
 	// reaping. Default: 15 minutes. Defined as a top-level (process-global)

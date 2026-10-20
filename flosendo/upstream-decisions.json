@@ -387,5 +387,26 @@
       "verdict": "not-used",
       "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
     }
+  },
+  "ours": {
+    "EDEN-1618": {
+      "what": "A message queued behind a busy session is never lost without its sender being told. Idle kill: the queue goes to a fresh session once the dead turn releases it, and alert_session_key hears of it. Reset (/new, /stop, a self-reset): each queued message gets 'Not processed (<why>): <first line>' in its own thread. Restart: Engine.Stop writes the queues to <data dir>/run/pending_queue_<project>.json; when a platform is ready again each sender gets the same notice in the message's thread (Slack: ReplyTargetKey). Every drop logs remaining_queue=0, and the drain log carries remaining_queue, so deploy.sh queued is right.",
+      "why": "19 Oct 2026: Ivan's 'sign 1' and ten numbered answers sat in such a queue for two hours and were lost to the idle kill; 6 queued messages were dropped 6 to 20 Oct (EDEN-1614 audit). Ivan, 20 Oct: 'promote 1618'.",
+      "files": [
+        "core/flosendo_queue.go",
+        "core/engine.go (notifyDroppedQueuedMessages, the idle kill, Engine.Stop, onPlatformReady, the drain log, the alertSessionKey field)",
+        "platform/slack/flosendo_reply_target.go",
+        "config/config.go (alert_session_key)",
+        "cmd/cc-connect/main.go (SetAlertSessionKey)",
+        "config.example.toml",
+        "flosendo/deploy.sh (queued)"
+      ],
+      "tests": [
+        "core/flosendo_queue_test.go",
+        "platform/slack/flosendo_reply_target_test.go",
+        "flosendo/test_queued.sh"
+      ],
+      "upstream_conflict_risk": "core/engine.go, five small hunks; an upstream change to notifyDroppedQueuedMessages, the idle-timeout case or Engine.Stop needs these re-applied."
+    }
   }
 }

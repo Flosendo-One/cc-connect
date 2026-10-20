@@ -414,6 +414,7 @@ type Engine struct {
 	references       ReferenceRenderCfg
 	relayManager     *RelayManager
 	eventIdleTimeout time.Duration
+	alertSessionKey  string        // EDEN-1618: where the bridge posts its own alerts (an idle kill); empty means none
 	maxTurnTime      time.Duration // absolute wall-clock cap per turn (0 = disabled)
 	// agentSessionIdleTimeoutNanos 在单轮正常结束后关闭空闲的 live agent 进程，
 	// 同时保留已保存的 session ID，便于下次继续恢复。
@@ -2425,6 +2426,9 @@ func (e *Engine) StopPlatforms() error {
 	e.stopping = true
 	e.platformLifecycleMu.Unlock()
 
+	// EDEN-1618: before the cancel, which kills the running agents and lets their turns drain or drop the queues.
+	e.saveQueuesBeforeStop()
+
 	e.cancel()
 
 	if e.observeCancel != nil {
@@ -2451,6 +2455,8 @@ func (e *Engine) Stop() error {
 
 	var errs []error
 	if !alreadyStopping {
+		// EDEN-1618: save the queues before the cancel (see StopPlatforms).
+		e.saveQueuesBeforeStop()
 		// Cancel first so late lifecycle callbacks observe shutdown immediately.
 		e.cancel()
 
@@ -2473,6 +2479,9 @@ func (e *Engine) Stop() error {
 		delete(e.interactiveStates, k)
 	}
 	e.interactiveMu.Unlock()
+
+	// EDEN-1618: the queues would die with this process; write them down so the restarted bridge tells each sender.
+	e.savePendingQueues(states)
 
 	for key, state := range states {
 		if state.agentSession != nil {
@@ -2525,6 +2534,8 @@ func (e *Engine) onPlatformReady(p Platform) {
 	}
 	slog.Info("platform ready", "project", e.name, "platform", p.Name())
 	e.initPlatformCapabilities(p)
+	// EDEN-1618: messages queued when the bridge last stopped: tell each sender, in its thread.
+	go e.noticeSavedQueue(p)
 }
 
 func (e *Engine) markPlatformReady(p Platform) bool {
@@ -5400,7 +5411,16 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 			p := state.platform
 			state.mu.Unlock()
 			e.send(p, replyCtx, fmt.Sprintf(e.i18n.T(MsgError), "agent session timed out (no response)"))
+			// EDEN-1618: nobody asked for this stop, so the queue is not dropped: it goes to a fresh session once this
+			// turn has released the session, and the alert channel hears of it.
+			queued := takePendingMessages(state)
 			e.cleanupInteractiveState(sessionKey, state)
+			waiting := "no message was waiting"
+			if len(queued) > 0 {
+				waiting = fmt.Sprintf("%d queued message(s) passed to a new session", len(queued))
+			}
+			e.alert(fmt.Sprintf("⚠️ %s: no agent events for %s, so the session was stopped; %s.", sessionKey, e.eventIdleTimeout, waiting))
+			go e.replayAfterIdleKill(session, sessionKey, queued)
 			return
 		case <-turnDeadlineCh:
 			elapsed := time.Since(turnStart)
@@ -6782,13 +6802,15 @@ func mergeRichToolResult(steps []ToolStep, event Event, result string, maxLen in
 // the event loop exits abnormally (EventError, channel closed) and queued
 // messages can no longer be delivered to the agent.
 func (e *Engine) notifyDroppedQueuedMessages(state *interactiveState, reason error) {
+	// EDEN-1618: each sender is told which message was not processed (its first line), not a bare error.
 	state.mu.Lock()
-	remaining := state.pendingMessages
-	state.pendingMessages = nil
+	key := state.canonicalSessionKey
 	state.mu.Unlock()
-	for _, q := range remaining {
-		e.send(q.platform, q.replyCtx, fmt.Sprintf(e.i18n.T(MsgError), reason))
+	why := "the session ended"
+	if reason != nil {
+		why = reason.Error()
 	}
+	e.notifyNotProcessed(key, takePendingMessages(state), why)
 }
 
 // drainPendingMessages processes all queued messages in the state's pendingMessages
@@ -6797,6 +6819,12 @@ func (e *Engine) notifyDroppedQueuedMessages(state *interactiveState, reason err
 // Returns true if the session was unlocked by this call.
 func (e *Engine) drainPendingMessages(state *interactiveState, session *Session, sessions *SessionManager, sessionKey string) bool {
 	for {
+		if e.ctx.Err() != nil {
+			// EDEN-1618: the bridge is stopping; the agent is going with it. Save what is left for after the restart.
+			e.saveQueuedItems(sessionKey, takePendingMessages(state))
+			session.Unlock()
+			return true
+		}
 		state.mu.Lock()
 		if len(state.pendingMessages) == 0 {
 			session.Unlock()
@@ -6861,7 +6889,11 @@ func (e *Engine) drainPendingMessages(state *interactiveState, session *Session,
 			stopTyping = ti.StartTyping(e.ctx, queued.replyCtx)
 		}
 
-		slog.Info("processing queued message", "session", sessionKey)
+		state.mu.Lock()
+		remainingQueue := len(state.pendingMessages)
+		state.mu.Unlock()
+		// EDEN-1618: remaining_queue, so flosendo/deploy.sh's queue check sees this drain.
+		slog.Info("processing queued message", "session", sessionKey, "remaining_queue", remainingQueue)
 		qTmCtx := telemetryMsgCtx{
 			UserID:       queued.userID,
 			UserName:     queued.userName,

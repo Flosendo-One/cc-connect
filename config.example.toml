@@ -148,6 +148,10 @@ level = "info" # debug, info, warn, error
 # Agent 空闲超时：两次 agent 事件之间的最大等待分钟数，超时则认为会话卡住。设为 0 禁用。
 # idle_timeout_mins = 120  # default: 120 (2 hours) / 默认 120（2 小时）
 
+# Where the bridge posts its own alerts, such as a session stopped by idle_timeout_mins (its queued messages are then
+# handed to a new session). A session key the platform can reconstruct, e.g. "slack:C0123456789". Unset: no alerts.
+# alert_session_key = "slack:C0123456789"
+
 # Absolute wall-clock cap per agent turn in minutes. Unlike idle_timeout_mins
 # (which resets on every event), this timer is never reset — it guarantees the
 # session is released even when a long bash command generates periodic tool events.
