@@ -1,6 +1,6 @@
 {
   "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
-  "decided_at": "2026-10-19",
+  "decided_at": "2026-10-26",
   "commits": {
     "961655de": {
       "subject": "fix(core): count queued user messages toward reset_on_idle_mins",
@@ -386,6 +386,266 @@
       "subject": "fix(feishu): extract hr element as standalone '---' in quoted posts (fixes #508)",
       "verdict": "not-used",
       "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "0d4376e6": {
+      "subject": "fix(codex): deliver async questions and steer user answers",
+      "verdict": "not-used",
+      "why": "This is for Codex questions. Its core part only reacts to EventUserInputRequest, which only agent/codex sends, so it does nothing for Claude Code. It still adds hooks to handleMessage and the idle-close checks in core/engine.go, and a test cherry-pick conflicts there."
+    },
+    "bbef5cbb": {
+      "subject": "Prevent Pi task supplements from being dropped during RPC turns",
+      "verdict": "not-used",
+      "why": "This is for agent/pi. Its only core file is a test (core/cuj_test.go), and that test conflicts with ours."
+    },
+    "582267bb": {
+      "subject": "feat(claudecode): tell the user when safeguards switch the session model",
+      "verdict": "watch",
+      "why": "We run this code, but the problem has not happened: all 66,280 assistant records in the eden transcripts since 9 Oct were answered by claude-opus-5-5, with no model_refusal_fallback in transcripts or logs. Symptom that would make us take it: a session answered by another model. Taking it is costly: it conflicts in agent/claudecode/session.go, core/engine.go and core/message.go, needs reportedCtxWindow and EventHookRejected (from 93b3a5da and 9355354f, neither taken), and writes to cs.events directly, which skips our orphan routing (emitEvent). It also posts a new Slack notice, so it needs Ivan."
+    },
+    "4b5be678": {
+      "subject": "fix(slack): forward tables and shared messages from blocks/attachments",
+      "verdict": "watch",
+      "why": "We run the Slack handler. It drops a human message whose text is empty and which has no files (platform/slack/slack.go:305), so a shared message or a native table would never reach the agent, and the logs cannot show that because such messages are dropped before anything is logged. Symptom that would make us take it: an agent missing a message Ivan shared or a table he pasted (none seen: 0 agent replies saying nothing came through). A test cherry-pick applies cleanly, but it changes what agents receive (attachment text, including link previews, is appended), so it needs Ivan."
+    },
+    "3e33c1b5": {
+      "subject": "fix(progress): recover card updates after transient failures",
+      "verdict": "have-equivalent",
+      "why": "The fork already backs off on transient Slack errors instead of switching the card off (aeed70ff, cooldown in core/progress_compact.go:313-320 and :624). The logs have 0 'UpdateMessage failed' and 0 'transient failure; backing off' lines across 358 compact cards. A cherry-pick conflicts in progress_compact.go and its test."
+    },
+    "0a4b4617": {
+      "subject": "fix(core): drop AskUserQuestion option taps that no longer match a question",
+      "verdict": "feature-off",
+      "why": "Our Slack sends no AskUserQuestion option buttons: platform/slack has no askq or block_actions handler, and bypass mode keeps questions non-interactive (48f8a399 was declined). The logs have 0 'askq' and 0 'AskUserQuestion' lines."
+    },
+    "b85f076d": {
+      "subject": "fix(core): surface provider persistence errors in management API",
+      "verdict": "feature-off",
+      "why": "The management API is off (no [management] section; cmd/cc-connect/main.go:1117 gates it) and we configure no providers. Its engine.go hunk is in the card-action /provider path, which Slack never uses."
+    },
+    "c7fbedc1": {
+      "subject": "fix: reject ambiguous CC-Switch provider imports",
+      "verdict": "feature-off",
+      "why": "CC-Switch import lives in the management API and web dashboard. Management is off, we build with no_web and we have no providers."
+    },
+    "80bdf304": {
+      "subject": "fix(claudecode): drop empty task-notification result on --resume; flush partial unsolicited text on cancel",
+      "verdict": "watch",
+      "why": "It could hit us: we resume sessions (8 resumed spawns, 9-26 Oct) and agents leave long shell jobs running in the background. It has not happened: 0 of 355 turns ended empty (the smallest reply was 8 chars, a NO_REPLY). Symptom that would make us take it: a turn posted as an empty response after a resume. The core half's flushPartial posts text without unsolicitedOutbound, so it skips our NO_REPLY patch (a054387f), and it would start posting text from the 222 unsolicited streams that now end cancelled. If taken, only the claudecode half, or with the flush routed through unsolicitedOutbound. It conflicts in agent/claudecode/session.go and needs Ivan."
+    },
+    "0bfbd23d": {
+      "subject": "fix(core): keep flushed unsolicited partial ordered before next turn",
+      "verdict": "watch",
+      "why": "Follow-up to 80bdf304's flushPartial, so it stands or falls with that commit. It conflicts in core/engine.go and engine_test.go."
+    },
+    "63299ef4": {
+      "subject": "fix(core): log compression turn completion before queued turns",
+      "verdict": "low-value",
+      "why": "It only adds a log line for /compress, which we never ran (0 'compress' lines 9-26 Oct; auto_compress is not configured). It conflicts in core/engine.go next to our EDEN-1618 queue code, and deploy.sh queued does not read 'turn complete' lines, so skipping it costs nothing."
+    },
+    "e3a69888": {
+      "subject": "fix(claudecode): resolve session dirs from per-project CLAUDE_CONFIG_DIR",
+      "verdict": "feature-off",
+      "why": "We set no CLAUDE_CONFIG_DIR: none in the project config, the systemd unit or the environment. Sessions live under ~/.claude, which this commit keeps as the fallback."
+    },
+    "0edf688d": {
+      "subject": "fix(windows): classify absent taskkill targets by exit status",
+      "verdict": "not-used",
+      "why": "Windows only (proc_windows.go and internal/taskkill). We build and run on Linux arm64."
+    },
+    "741fe98e": {
+      "subject": "fix(instance_lock): wait for killed process to exit so --force can re-acquire the flock",
+      "verdict": "low-value",
+      "why": "This only matters for 'cc-connect --force', which we never use. systemd stops the old process and deploy.sh has no --force, and both starts in the logs acquired the lock normally ('acquired instance lock', 9 Oct and 20 Oct)."
+    },
+    "0565a4de": {
+      "subject": "fix(cmd/sessions): strip work_dir hash suffix when deriving project name",
+      "verdict": "low-value",
+      "why": "The bug is real for us: our store is sessions/eden_ada91dda.json, so 'cc-connect sessions list' labels the project 'eden_ada91dda'. But only that hand-run CLI is affected; no script or agent depends on it."
+    },
+    "5ae7b24f": {
+      "subject": "fix(core): stop the relay timeout path returning the target agent's tool output",
+      "verdict": "feature-off",
+      "why": "Bot-to-bot relay needs a second project, and we run one (eden). Of the 224 lines containing 'relay' in 9-26 Oct, none came from relay itself: 222 are the unsolicited reader's 'relaying to platform' and 2 are message text."
+    },
+    "601661e8": {
+      "subject": "fix(core/observer): advance offset on scanner error to prevent re-forwarding",
+      "verdict": "feature-off",
+      "why": "The terminal observer is off: no --observe in ExecStart and no [projects.observe]."
+    },
+    "c1b71861": {
+      "subject": "fix(slack): gate rich-content debug dump behind debug level; cover all block kinds",
+      "verdict": "watch",
+      "why": "Follow-up to 4b5be678, so take both or neither. Our log level is debug, so the raw blocks dump (up to 4,000 chars of message content) would be written to our logs."
+    },
+    "b76abd68": {
+      "subject": "fix: localize ambiguous CC-Switch import errors",
+      "verdict": "feature-off",
+      "why": "Follow-up to c7fbedc1 (management API and web dashboard, both off). It shares core/i18n.go with our patches."
+    },
+    "4e6ae098": {
+      "subject": "fix(claudecode): /usage probe no longer hangs when the PTY reader finishes first",
+      "verdict": "low-value",
+      "why": "We never run /usage: the only command in the 9-26 Oct audit log is /new (14 times). A test cherry-pick applies cleanly, but it adds nothing for us."
+    },
+    "6fdc91f9": {
+      "subject": "fix(cron): preserve explicit session_mode=reuse override over global default",
+      "verdict": "feature-off",
+      "why": "There is no [cron] session_mode default, and none of our 6 cron jobs sets session_mode, so the override case cannot happen."
+    },
+    "a32baca1": {
+      "subject": "test(slack): cover malformed/empty payloads and unchanged plain mentions",
+      "verdict": "watch",
+      "why": "Tests for 4b5be678's rich_content.go, so take them with it or not at all."
+    },
+    "2b7251b2": {
+      "subject": "fix(relay): preserve full response content in group echoes",
+      "verdict": "feature-off",
+      "why": "Relay group echoes need a second project, and we run one and have no relay activity in 9-26 Oct."
+    },
+    "040c6d84": {
+      "subject": "fix(shell): show usage when /shell is called with no arguments",
+      "verdict": "feature-off",
+      "why": "/shell is blocked because admin_from is not set ('privileged commands ... are blocked', logged at both starts, 9 and 20 Oct). It shares core/engine.go with our patches."
+    },
+    "f690f0d7": {
+      "subject": "test(core): wait for manual cron persistence before cleanup",
+      "verdict": "low-value",
+      "why": "Test only, in core/management_test.go."
+    },
+    "314829ad": {
+      "subject": "test(core): check async question engine cleanup errors",
+      "verdict": "not-used",
+      "why": "Test for 0d4376e6's Codex async questions."
+    },
+    "c54db32a": {
+      "subject": "lint: collapse if HasSuffix/TrimSuffix into unconditional TrimSuffix",
+      "verdict": "low-value",
+      "why": "Lint fix to cmd/cc-connect/sessions.go that depends on 0565a4de (low-value)."
+    },
+    "0fc83304": {
+      "subject": "test: check e.Stop error in unsolicited flush test (errcheck)",
+      "verdict": "watch",
+      "why": "Lint fix to 80bdf304's test, so take it with 80bdf304 or not at all."
+    },
+    "c3079ad3": {
+      "subject": "fix(gemini): preserve options when creating workspace agents",
+      "verdict": "not-used",
+      "why": "For agent/gemini, which we do not run (Slack + Claude Code only)."
+    },
+    "c6c7abcd": {
+      "subject": "fix(acp): resume sessions via session/resume, not only session/load",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "fd1a765d": {
+      "subject": "fix(telegram): retry sends and edits rejected with 429 Too Many Requests",
+      "verdict": "not-used",
+      "why": "For platform/telegram, which we do not run (Slack + Claude Code only)."
+    },
+    "61018981": {
+      "subject": "fix(codex): wait for completed exec turns before follow-ups (#2063)",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "116b3a2e": {
+      "subject": "fix(qoder): kill process on stdin write failure to prevent zombie",
+      "verdict": "not-used",
+      "why": "For agent/qoder, which we do not run (Slack + Claude Code only)."
+    },
+    "9317bcb6": {
+      "subject": "fix(acp): preserve tool names across partial result updates",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "617dd9d6": {
+      "subject": "fix(feishu): expand merge_forward content when quoting a reply",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "16268423": {
+      "subject": "fix(qoder): deliver prompt via stdin to avoid reply-chain parse error",
+      "verdict": "not-used",
+      "why": "For agent/qoder, which we do not run (Slack + Claude Code only)."
+    },
+    "5894ff26": {
+      "subject": "fix(codex): handle large app-server resume responses",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "9a375c35": {
+      "subject": "fix: 合并 Codex 重复 rollout 会话",
+      "verdict": "not-used",
+      "why": "Merges duplicate Codex rollout sessions (agent/codex/list.go), which we do not run (Slack + Claude Code only)."
+    },
+    "9e105e9e": {
+      "subject": "fix(weixin): don't charge turn answers to the push budget",
+      "verdict": "not-used",
+      "why": "For platform/weixin, which we do not run (Slack + Claude Code only)."
+    },
+    "29b87bd1": {
+      "subject": "fix(discord): guard botID/appID/session under p.mu in event callbacks",
+      "verdict": "not-used",
+      "why": "For platform/discord, which we do not run (Slack + Claude Code only)."
+    },
+    "b3b40576": {
+      "subject": "fix(acp): relay out-of-turn background text with a synthetic EventResult",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "90fc9883": {
+      "subject": "fix(feishu): resolve post bot mention placeholders before dispatch",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "57c2dacd": {
+      "subject": "fix(wps-agentspace): add allow_from access control",
+      "verdict": "not-used",
+      "why": "For platform/wps-agentspace, which we do not run. It shares config.example.toml with EDEN-1618 (alert_session_key): example file only, at most a text conflict."
+    },
+    "5692a001": {
+      "subject": "test(opencode): assert the opencode process runs in work_dir",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "791922ca": {
+      "subject": "fix(weixin): split outbound text with the code-fence-aware splitter",
+      "verdict": "not-used",
+      "why": "For platform/weixin, which we do not run (Slack + Claude Code only)."
+    },
+    "ef631d7c": {
+      "subject": "fix(codex): offer GPT-6.1 Sol and GPT-6 fallback models",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run. It shares config.example.toml with EDEN-1618: example file only, at most a text conflict."
+    },
+    "7b1bdbc2": {
+      "subject": "fix(weixin): stop telling the agent Weixin is plain-text only",
+      "verdict": "not-used",
+      "why": "For platform/weixin, which we do not run (Slack + Claude Code only)."
+    },
+    "0beaa6c1": {
+      "subject": "fix(opencode): stop passing the unsupported --dir flag to opencode run",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "d62e3a75": {
+      "subject": "fix(acp): log malformed resume results, note the #2038 replay guard",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "4e1c75fa": {
+      "subject": "fix(opencode): wait for the process before reading stderr",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "21088538": {
+      "subject": "fix(opencode): bound how long Wait waits for the I/O goroutines",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "59fa48af": {
+      "subject": "test(qoder): handle sess.Close error to satisfy errcheck lint",
+      "verdict": "not-used",
+      "why": "For agent/qoder, which we do not run (Slack + Claude Code only)."
     }
   },
   "ours": {
