@@ -1,6 +1,6 @@
 {
   "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
-  "decided_at": "2026-10-26",
+  "decided_at": "2026-11-02",
   "commits": {
     "961655de": {
       "subject": "fix(core): count queued user messages toward reset_on_idle_mins",
@@ -646,6 +646,161 @@
       "subject": "test(qoder): handle sess.Close error to satisfy errcheck lint",
       "verdict": "not-used",
       "why": "For agent/qoder, which we do not run (Slack + Claude Code only)."
+    },
+    "e8c09776": {
+      "subject": "Add Atlas Cloud provider preset",
+      "verdict": "feature-off",
+      "why": "Adds an Atlas Cloud entry to provider-presets.json: we configure no providers (providerCount=0 at all 33 session starts, 22 Oct-2 Nov) and never ran /provider, and the bridge fetches presets from upstream's URL at run time (core/provider_presets.go:14), not from this file. A test apply conflicts in provider-presets.json."
+    },
+    "76d937d7": {
+      "subject": "fix(core): isolate reasoning cards by workspace and handle empty efforts",
+      "verdict": "low-value",
+      "why": "Two /reasoning fixes: the card follows the session's workspace (multi-workspace mode is off, and our Slack has no card actions) and an agent with no effort levels is told 'not supported' (agent/claudecode always lists low|medium|high|max). We never type /reasoning (audit log 22 Oct-2 Nov: /new 29, /stop 1); it builds on 85e6b39e and a test apply conflicts in core/engine.go and core/cuj_test.go."
+    },
+    "03d3c687": {
+      "subject": "fix(observe): match Claude Code project key encoding for underscored/spaced workdirs",
+      "verdict": "feature-off",
+      "why": "The terminal observer is off: no --observe in the drop-in's ExecStart, no [projects.observe], and 0 'observe' lines in the logs 22 Oct-2 Nov. Our work_dir /home/ubuntu/eden has no '_', ' ', ':', '~' or non-ASCII, so the old encoding already finds it."
+    },
+    "cfe73f14": {
+      "subject": "fix(core): keep receiving background events after turn errors",
+      "verdict": "watch",
+      "why": "We run this path (188 unsolicited background relays, 22 Oct-2 Nov), and after a turn error our engine starts no unsolicited reader, so later background events wait and are drained at the next message. Not seen yet: 5 turn errors, all on 2 Nov ('Prompt is too long' 06:23:55Z, the usage limit 4 times 07:39-08:30Z); one drain followed (06:24:18Z, 1 event) with nothing in that session's transcript in between; 107 of 108 cron runs and 7 of 7 timers completed (the failure, 08:00:03Z, was the usage limit itself); 0 'unsolicited agent error'. Symptom that would make us take it: a background result missing after an 'agent error', seen as a multi-event 'drained stale events' in that session. Its new error branch posts partial text with e.send, skipping our NO_REPLY filter (unsolicitedOutbound, a054387f), a test apply conflicts in core/engine.go's turn-error case, and it changes what posts, so Ivan first."
+    },
+    "85e6b39e": {
+      "subject": "fix(core): render /reasoning usage from active agent's effort levels",
+      "verdict": "low-value",
+      "why": "/reasoning text: the not-set line stops saying 'Codex default' and the usage line lists the agent's own levels. We never type /reasoning (audit log 22 Oct-2 Nov: /new 29, /stop 1); a test apply conflicts in core/engine.go."
+    },
+    "3d186ab6": {
+      "subject": "fix(claudecode): synchronise the usage probe's stderr buffer",
+      "verdict": "low-value",
+      "why": "A data race on the /usage probe's stderr buffer, reported only under -race by a test from 4e6ae098 (low-value, not taken). We never run /usage (audit log 22 Oct-2 Nov: /new 29, /stop 1), our Slack turns never render the footer that could also call it (see 93b3a5da), and no probe warning is in the logs; one file, applies cleanly."
+    },
+    "f6d1e6c7": {
+      "subject": "polish: skip redundant allow-ack on inline-button platforms; silence empty placeholder on cancelled turns",
+      "verdict": "not-used",
+      "why": "Both halves need what we lack: the allow-ack skip is for platforms with inline buttons (platform/slack does not implement InlineButtonSender, and bypass mode asks no permissions), and the silent cancelled turn is for agents with CancelTurn (agent/claudecode has none). 0 of 283 turns ended empty, 22 Oct-2 Nov."
+    },
+    "0e9cdbaf": {
+      "subject": "test(core): check engine cleanup errors",
+      "verdict": "watch",
+      "why": "Test cleanup checks for cfe73f14's two tests (it does not apply without them), so take it with cfe73f14 or not at all."
+    },
+    "30fcd57e": {
+      "subject": "fix(pi): treat enabledModels as scope patterns, not model IDs",
+      "verdict": "not-used",
+      "why": "For agent/pi, which we do not run (Slack + Claude Code only)."
+    },
+    "b023def0": {
+      "subject": "fix(daemon): reconcile both launchd labels and never restart into a broken install",
+      "verdict": "not-used",
+      "why": "macOS launchd daemon: we run under systemd."
+    },
+    "8bd79ab8": {
+      "subject": "Keep provider presets formatting stable",
+      "verdict": "feature-off",
+      "why": "Reformats provider-presets.json for e8c09776: we configure no providers, and the bridge fetches presets from upstream's URL, not this file."
+    },
+    "ed792bfe": {
+      "subject": "fix(dingtalk): handle expired session webhooks",
+      "verdict": "not-used",
+      "why": "For platform/dingtalk, which we do not run (Slack + Claude Code only)."
+    },
+    "f84badac": {
+      "subject": "fix(codex): reliably terminate turns on transport shutdown",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "ed931837": {
+      "subject": "fix(feishu): pass video meeting cards and other unhandled message types to the agent",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "d1825bca": {
+      "subject": "feat(antigravity): stream progress events for cards",
+      "verdict": "not-used",
+      "why": "For agent/antigravity, which we do not run (Slack + Claude Code only)."
+    },
+    "2a23f166": {
+      "subject": "fix(platform/max): reply to private-dialog callbacks and honor perm:* payloads",
+      "verdict": "not-used",
+      "why": "For platform/max, which we do not run (Slack + Claude Code only)."
+    },
+    "5de33aae": {
+      "subject": "feat(feishu): download the video file for media messages",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "1246c2ed": {
+      "subject": "fix(codex): reject child app-server requests before surfacing them",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "726f1b68": {
+      "subject": "fix(codex): isolate subagent app-server events",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "49d39e12": {
+      "subject": "fix(codex): wait for turn completion instead of thread idle",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "3561f9ca": {
+      "subject": "test(acp): cover HistoryProvider and forward agent storage env",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "f82bea1d": {
+      "subject": "fix(cursor): show readable Glob tool inputs",
+      "verdict": "not-used",
+      "why": "For agent/cursor, which we do not run (Slack + Claude Code only)."
+    },
+    "3a6bd90e": {
+      "subject": "refactor(platform/max): address review feedback on callback handling",
+      "verdict": "not-used",
+      "why": "For platform/max, which we do not run (Slack + Claude Code only)."
+    },
+    "0fbe73a3": {
+      "subject": "feat(acp): implement ContextUsageReporter from opencode usage signals",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "b03aa997": {
+      "subject": "feat(qq): add require_mention gate for group messages",
+      "verdict": "not-used",
+      "why": "For platform/qq, which we do not run (Slack + Claude Code only)."
+    },
+    "19c30389": {
+      "subject": "test(qq): cover require_mention gate and messageMentionsSelf",
+      "verdict": "not-used",
+      "why": "For platform/qq, which we do not run (Slack + Claude Code only)."
+    },
+    "3f46f192": {
+      "subject": "fix(blackbox): stop two p1 fixtures failing for fixture reasons",
+      "verdict": "low-value",
+      "why": "Test only: two fixtures in upstream's tests/blackbox/p1 suite (built with -tags blackbox), which we do not run; no runtime change."
+    },
+    "9b0ddc48": {
+      "subject": "feat(acp): implement HistoryProvider via local Kimi transcripts",
+      "verdict": "not-used",
+      "why": "For agent/acp and agent/kimi, which we do not run (Slack + Claude Code only)."
+    },
+    "554ad888": {
+      "subject": "test(codex): give the 11 MB read-loop case a timeout that survives a loaded runner",
+      "verdict": "not-used",
+      "why": "For agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "201d4d2d": {
+      "subject": "docs(qq): document require_mention option",
+      "verdict": "low-value",
+      "why": "Docs only, for platform/qq's require_mention (b03aa997), which we do not run."
+    },
+    "cd8a0c1c": {
+      "subject": "Normalize Atlas Cloud preset comma placement",
+      "verdict": "feature-off",
+      "why": "Comma placement in e8c09776's Atlas Cloud preset: we configure no providers."
     }
   },
   "ours": {
