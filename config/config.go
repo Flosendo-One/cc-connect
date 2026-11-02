@@ -599,6 +599,9 @@ type ProjectConfig struct {
 	Shell string `toml:"shell,omitempty"`
 	// ShellProfile overrides the global shell_profile for this project.
 	ShellProfile string `toml:"shell_profile,omitempty"`
+	// SessionEnv (Flosendo fork, EDEN-1789): env added to the agent of the sessions each rule names, e.g. a
+	// channel's CLAUDE_CONFIG_DIR (its person's Claude seat). See flosendo_session_env.go.
+	SessionEnv []SessionEnvConfig `toml:"session_env,omitempty"`
 }
 
 type AgentConfig struct {
@@ -1115,6 +1118,9 @@ func (c *Config) validateInternal(permissive bool) error {
 			return err
 		}
 		if err := validateDisplayConfig(prefix+".display", proj.Display); err != nil {
+			return err
+		}
+		if err := validateSessionEnv(prefix, proj.SessionEnv); err != nil { // EDEN-1789
 			return err
 		}
 	}

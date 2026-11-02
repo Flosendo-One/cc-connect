@@ -79,7 +79,7 @@ func (a *Agent) runClaudeUsageProbe(ctx context.Context) (string, error) {
 	env := filterEnv(os.Environ(), "CLAUDECODE")
 	env = append(env, "DISABLE_TELEMETRY=true")
 	env = append(env, "DISABLE_COST_WARNINGS=true")
-	if extra := a.usageProbeEnv(); len(extra) > 0 {
+	if extra := a.usageProbeEnvFor(ctx); len(extra) > 0 { // EDEN-1789: the asking channel's seat
 		env = core.MergeEnv(env, extra)
 	}
 	cmd.Env = env

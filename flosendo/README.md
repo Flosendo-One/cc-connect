@@ -18,6 +18,13 @@ took the fork over, each with its test:
 | `6ed03c23` | A nudge that meets a busy session waits (up to 3 h) and runs; "⏰" posts only when it starts | `core/flosendo_scheduled_test.go` |
 | `79cfad75` | A nudge cancelled or switched off while it waits does not run | `core/flosendo_scheduled_test.go` |
 | EDEN-1618 | A message queued behind a busy session is never lost unseen: an idle kill hands it to a fresh session (and posts to `alert_session_key`); a reset says "Not processed" in its thread, quoting it; a restart saves the queue and says the same after; `deploy.sh queued` reads the drops | `core/flosendo_queue_test.go`, `platform/slack/flosendo_reply_target_test.go`, `flosendo/test_queued.sh` |
+| EDEN-1789 | A channel bound to a person's Claude seat: `[[projects.session_env]]` (a session key, its env) adds that env to every agent start of the key, its threads (`key:...`) and its cron runs (`key#cron:...`), never to another key; hot-reloaded by `/config reload`, validated at load (a malformed entry fails the load, so a reload keeps the old rules); one `flosendo: agent start` log line per start names the key, the env names and the seat folder, never another value (the per-session account record EDEN-1782 reads); `/usage` probes the asking channel's seat, not the last start's. Code in `core/flosendo_session_env.go`, `config/flosendo_session_env.go` and `agent/claudecode/flosendo_usage_seat.go`; engine.go has one call at each of the two start sites and one in `/usage`, `claude_usage.go` one | `core/`, `config/`, `cmd/cc-connect/flosendo_session_env_test.go`, `agent/claudecode/flosendo_usage_seat_test.go` |
+
+## Upstream defects we know of (not patched; watch for an upstream fix)
+
+- `agent/claudecode/claude_usage.go` `runClaudeUsageProbe`: when the probed `claude` exits early, the pty read fails
+  with EIO; if the loop takes that from `readDone`, the deferred `<-readDone` then waits for ever, and `/usage` never
+  answers (found under EDEN-1789, 2 Nov 2026; confirmed by its review round 2).
 
 ## Taking an upstream change: score, decide, then build
 

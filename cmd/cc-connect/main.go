@@ -695,6 +695,9 @@ func main() {
 		// EDEN-1618: where an idle kill is reported (empty: nowhere).
 		engine.SetAlertSessionKey(cfg.AlertSessionKey)
 
+		// EDEN-1789: a channel bound to a person's Claude seat (hot-reloaded by /config reload).
+		engine.SetSessionEnvRules(sessionEnvRules(proj.SessionEnv))
+
 		// Wire max turn time (absolute per-turn wall-clock cap; 0 = disabled)
 		if cfg.MaxTurnTimeMins != nil && *cfg.MaxTurnTimeMins > 0 {
 			engine.SetMaxTurnTime(time.Duration(*cfg.MaxTurnTimeMins) * time.Minute)
@@ -1907,6 +1910,9 @@ func reloadConfig(configPath, projName string, engine *core.Engine) (*core.Confi
 	// Reload admin allowlist
 	engine.SetAdminFrom(proj.AdminFrom)
 
+	// EDEN-1789: per-session-key env (a channel's Claude seat). A removed line removes the rule.
+	engine.SetSessionEnvRules(sessionEnvRules(proj.SessionEnv))
+
 	// Reload per-user role-based policies
 	if proj.Users != nil {
 		engine.SetUserRoles(buildUserRoleManager(proj.Users))
@@ -1916,6 +1922,15 @@ func reloadConfig(configPath, projName string, engine *core.Engine) (*core.Confi
 
 	slog.Info("config reloaded", "project", projName)
 	return result, nil
+}
+
+// sessionEnvRules converts [[projects.session_env]] for the engine (EDEN-1789).
+func sessionEnvRules(cfg []config.SessionEnvConfig) []core.SessionEnvRule {
+	rules := make([]core.SessionEnvRule, 0, len(cfg))
+	for _, r := range cfg {
+		rules = append(rules, core.SessionEnvRule{SessionKey: r.SessionKey, Env: r.Env})
+	}
+	return rules
 }
 
 func buildUserRoleManager(uc *config.UsersConfig) *core.UserRoleManager {

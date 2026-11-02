@@ -407,6 +407,8 @@ type Engine struct {
 	userRoles    *UserRoleManager // nil = legacy mode (no per-user policies)
 	userRolesMu  sync.RWMutex     // protects userRoles, disabledCmds, and adminFrom
 
+	flosendoSessionEnv sessionEnvRules // EDEN-1789: per-session-key env (a channel bound to a Claude seat)
+
 	rateLimiter      *RateLimiter
 	outgoingRL       *OutgoingRateLimiter
 	streamPreview    StreamPreviewCfg
@@ -4332,6 +4334,7 @@ func (e *Engine) getOrCreateInteractiveStateWith(sessionKey string, p Platform, 
 				envVars = append(envVars, "PATH="+binDir)
 			}
 		}
+		envVars = append(envVars, e.flosendoStartEnv(ccKey)...) // EDEN-1789: a channel's Claude seat
 		inj.SetSessionEnv(envVars)
 	}
 
@@ -9388,7 +9391,7 @@ func (e *Engine) cmdUsage(p Platform, msg *Message) {
 	fetchCtx, cancel := context.WithTimeout(e.ctx, 10*time.Second)
 	defer cancel()
 
-	report, err := reporter.GetUsage(fetchCtx)
+	report, err := reporter.GetUsage(WithSessionEnv(fetchCtx, e.FlosendoSessionEnvFor(msg.SessionKey))) // EDEN-1789
 	if err != nil {
 		e.reply(p, msg.ReplyCtx, e.i18n.Tf(MsgUsageFetchFailed, err))
 		return
@@ -16872,6 +16875,7 @@ func (e *Engine) HandleRelay(ctx context.Context, fromProject, sourceSessionKey,
 				envVars = append(envVars, "PATH="+binDir+string(filepath.ListSeparator)+curPath)
 			}
 		}
+		envVars = append(envVars, e.flosendoStartEnv(sourceSessionKey)...) // EDEN-1789: a channel's Claude seat
 		inj.SetSessionEnv(envVars)
 	}
 
