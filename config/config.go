@@ -602,6 +602,9 @@ type ProjectConfig struct {
 	// SessionEnv (Flosendo fork, EDEN-1789): env added to the agent of the sessions each rule names, e.g. a
 	// channel's CLAUDE_CONFIG_DIR (its person's Claude seat). See flosendo_session_env.go.
 	SessionEnv []SessionEnvConfig `toml:"session_env,omitempty"`
+	// EffortGuard (Flosendo fork, EDEN-1759): the script asked before a session started with `/new effort=<v>` runs
+	// below the default effort; empty refuses every such start. An absolute path. See core/flosendo_session_effort.go.
+	EffortGuard string `toml:"effort_guard,omitempty"`
 }
 
 type AgentConfig struct {
@@ -1119,6 +1122,9 @@ func (c *Config) validateInternal(permissive bool) error {
 		}
 		if err := validateDisplayConfig(prefix+".display", proj.Display); err != nil {
 			return err
+		}
+		if proj.EffortGuard != "" && !filepath.IsAbs(proj.EffortGuard) { // EDEN-1759
+			return fmt.Errorf("config: %s.effort_guard must be an absolute path", prefix)
 		}
 		if err := validateSessionEnv(prefix, proj.SessionEnv); err != nil { // EDEN-1789
 			return err

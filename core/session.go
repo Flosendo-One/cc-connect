@@ -56,6 +56,8 @@ type Session struct {
 	// sessions cannot permanently occupy the active slot.
 	ExplicitActivatedAt time.Time `json:"explicit_activated_at,omitempty"`
 
+	FlosendoEffort *SessionEffort `json:"flosendo_effort,omitempty"` // EDEN-1759: this session's effort, asked for at /new
+
 	mu   sync.Mutex `json:"-"`
 	busy bool       `json:"-"`
 }
@@ -705,6 +707,7 @@ func (sm *SessionManager) saveLocked() {
 			// restart; otherwise a /switch followed by a crash would lose the
 			// exemption and the next message after restart would be rotated.
 			ExplicitActivatedAt: s.ExplicitActivatedAt,
+			FlosendoEffort:      s.FlosendoEffort.clone(), // EDEN-1759: kept across a restart (a resume keeps its effort)
 		}
 		s.mu.Unlock()
 	}

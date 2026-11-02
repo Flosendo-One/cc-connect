@@ -697,6 +697,8 @@ func main() {
 
 		// EDEN-1789: a channel bound to a person's Claude seat (hot-reloaded by /config reload).
 		engine.SetSessionEnvRules(sessionEnvRules(proj.SessionEnv))
+		// EDEN-1759: the script asked before a /new effort=<v> session starts below the default (hot-reloaded too).
+		engine.SetEffortGuard(proj.EffortGuard)
 
 		// Wire max turn time (absolute per-turn wall-clock cap; 0 = disabled)
 		if cfg.MaxTurnTimeMins != nil && *cfg.MaxTurnTimeMins > 0 {
@@ -1912,6 +1914,8 @@ func reloadConfig(configPath, projName string, engine *core.Engine) (*core.Confi
 
 	// EDEN-1789: per-session-key env (a channel's Claude seat). A removed line removes the rule.
 	engine.SetSessionEnvRules(sessionEnvRules(proj.SessionEnv))
+	// EDEN-1759: the effort guard. A removed line refuses every /new effort=<v> below the default.
+	engine.SetEffortGuard(proj.EffortGuard)
 
 	// Reload per-user role-based policies
 	if proj.Users != nil {

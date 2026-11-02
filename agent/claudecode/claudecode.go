@@ -305,6 +305,8 @@ func normalizeEffort(raw string) string {
 		return "medium"
 	case "high":
 		return "high"
+	case "xhigh": // Flosendo (EDEN-1759): Claude Code's own level between high and max; dropped to "" before
+		return "xhigh"
 	case "max":
 		return "max"
 	default:
@@ -627,6 +629,9 @@ func (a *Agent) StartSession(ctx context.Context, sessionID string) (core.AgentS
 	// (verbose emits non-JSON text to stdout that corrupts the JSON stream).
 	disableVerbose := a.routerURL != ""
 	a.mu.Unlock()
+	if v := core.SessionEffortFromContext(ctx); v != "" { // Flosendo (EDEN-1759): this one start's effort, from /new
+		effort = normalizeEffort(v)
+	}
 
 	return newClaudeSession(ctx, workDir, a.cmd, a.cliExtraArgs, a.cmdArgsFlag, model, effort, sessionID, mode, systemPrompt, appendSystemPrompt, tools, disTools, pluginDirs, extraEnv, platformPrompt, disableVerbose, a.spawnOpts, maxTok, a.ccDataDir, lang)
 }

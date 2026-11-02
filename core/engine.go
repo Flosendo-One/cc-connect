@@ -407,7 +407,8 @@ type Engine struct {
 	userRoles    *UserRoleManager // nil = legacy mode (no per-user policies)
 	userRolesMu  sync.RWMutex     // protects userRoles, disabledCmds, and adminFrom
 
-	flosendoSessionEnv sessionEnvRules // EDEN-1789: per-session-key env (a channel bound to a Claude seat)
+	flosendoSessionEnv  sessionEnvRules   // EDEN-1789: per-session-key env (a channel bound to a Claude seat)
+	flosendoEffortGuard effortGuardConfig // EDEN-1759: the script asked before a session starts below the default effort
 
 	rateLimiter      *RateLimiter
 	outgoingRL       *OutgoingRateLimiter
@@ -3890,6 +3891,7 @@ func (e *Engine) processInteractiveMessageWith(p Platform, msg *Message, session
 	if agent != e.agent {
 		agentOverride = agent
 	}
+	e.flosendoDecideEffort(p, msg, session, sessions, firstNonEmpty(ccSessionKey, interactiveKey)) // EDEN-1759
 	state := e.getOrCreateInteractiveStateWith(interactiveKey, p, msg.ReplyCtx, session, sessions, agentOverride, ccSessionKey)
 
 	// Set workspaceDir on the state for idle reaper identification
@@ -4334,7 +4336,7 @@ func (e *Engine) getOrCreateInteractiveStateWith(sessionKey string, p Platform, 
 				envVars = append(envVars, "PATH="+binDir)
 			}
 		}
-		envVars = append(envVars, e.flosendoStartEnv(ccKey)...) // EDEN-1789: a channel's Claude seat
+		envVars = append(envVars, e.flosendoStartEnv(ccKey, session)...) // EDEN-1789: a channel's Claude seat
 		inj.SetSessionEnv(envVars)
 	}
 
@@ -4401,7 +4403,8 @@ func (e *Engine) getOrCreateInteractiveStateWith(sessionKey string, p Platform, 
 
 	isResume := startSessionID != ""
 	startAt := time.Now()
-	agentSession, err := agent.StartSession(e.ctx, startSessionID)
+	startCtx := e.flosendoEffortContext(e.ctx, session) // EDEN-1759: this session's effort, for this start only
+	agentSession, err := agent.StartSession(startCtx, startSessionID)
 	startElapsed := time.Since(startAt)
 	if err != nil {
 		// If resume/continue failed, try a fresh session as fallback.
@@ -4414,7 +4417,7 @@ func (e *Engine) getOrCreateInteractiveStateWith(sessionKey string, p Platform, 
 			session.SetAgentSessionID("", agent.Name())
 			sessions.Save()
 			startAt = time.Now()
-			agentSession, err = agent.StartSession(e.ctx, "")
+			agentSession, err = agent.StartSession(startCtx, "")
 			startElapsed = time.Since(startAt)
 			if err == nil {
 				slog.Info("fresh session started after resume failure",
@@ -7629,11 +7632,12 @@ func (e *Engine) cmdNew(p Platform, msg *Message, args []string) {
 	old.ClearHistory()
 	sessions.Save()
 
+	effort, args, badEffort := parseNewEffort(args) // EDEN-1759: /new effort=<v> [name]
 	name := ""
 	if len(args) > 0 {
 		name = strings.Join(args, " ")
 	}
-	sessions.NewSession(msg.SessionKey, name)
+	e.flosendoNewEffort(p, msg, sessions.NewSession(msg.SessionKey, name), sessions, effort, badEffort) // EDEN-1759
 	textReply := func() string {
 		if name != "" {
 			return e.i18n.Tf(MsgNewSessionCreatedName, name)
@@ -16875,7 +16879,7 @@ func (e *Engine) HandleRelay(ctx context.Context, fromProject, sourceSessionKey,
 				envVars = append(envVars, "PATH="+binDir+string(filepath.ListSeparator)+curPath)
 			}
 		}
-		envVars = append(envVars, e.flosendoStartEnv(sourceSessionKey)...) // EDEN-1789: a channel's Claude seat
+		envVars = append(envVars, e.flosendoStartEnv(sourceSessionKey, nil)...) // EDEN-1789: a channel's Claude seat
 		inj.SetSessionEnv(envVars)
 	}
 

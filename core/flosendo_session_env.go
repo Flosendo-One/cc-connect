@@ -85,8 +85,9 @@ func (e *Engine) FlosendoSessionEnvFor(key string) []string {
 
 // flosendoStartEnv is what each start site appends to its session env, and its log line: one per agent start, naming
 // the session key, the rule's env names and the seat folder the agent runs on (the rule's, else the bridge's own),
+// and the session's effort (EDEN-1759: its value or "default", and from "new", "refused" or "none"; nil for a relay),
 // never another value.
-func (e *Engine) flosendoStartEnv(key string) []string {
+func (e *Engine) flosendoStartEnv(key string, session *Session) []string {
 	env := e.FlosendoSessionEnvFor(key)
 	names := make([]string, 0, len(env))
 	seat := ""
@@ -102,8 +103,10 @@ func (e *Engine) flosendoStartEnv(key string) []string {
 		source = "bridge"
 		seat = bridgeSeatDir()
 	}
+	effort, effortFrom := startEffort(session)
 	slog.Info("flosendo: agent start", "project", e.name, "session_key", key,
-		"env_names", strings.Join(names, ","), "claude_config_dir", seat, "seat_from", source)
+		"env_names", strings.Join(names, ","), "claude_config_dir", seat, "seat_from", source,
+		"effort", effortOrDefault(effort), "effort_from", effortFrom)
 	return env
 }
 
