@@ -1,0 +1,59 @@
+# EDEN-1137 D0: s4_queued_gap, real claude 2.1.286 (haiku), trimmed by minimize.py; dir in = the bridge writes message n
+{"t": 0.001, "dir": "in", "n": 1}
+{"t": 0.001, "dir": "in", "n": 2}
+{"t": 1.179, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.18, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.421, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "hook_response", "hook_event": "SessionStart"}}
+{"t": 1.732, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "queued", "command_uuid": "$IN1"}}
+{"t": 1.737, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "started", "command_uuid": "$IN1"}}
+{"t": 1.75, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "queued", "command_uuid": "$IN2"}}
+{"t": 2.344, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 2.688, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "hook_progress", "hook_event": "SessionStart"}}
+{"t": 3.55, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 3.715, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "hook_progress", "hook_event": "SessionStart"}}
+{"t": 4.922, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 5.528, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 5.534, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 5.563, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "text", "text": "ONE0"}]}}}
+{"t": 5.622, "dir": "out", "line": {"type": "rate_limit_event", "session_id": "s1137-s4_queued_gap"}}
+{"t": 5.82, "dir": "out", "line": {"type": "result", "session_id": "s1137-s4_queued_gap", "subtype": "success", "is_error": false, "num_turns": 1, "result": "ONE0", "usage": {"input_tokens": 10, "output_tokens": 225, "cache_creation_input_tokens": 6678, "cache_read_input_tokens": 19135}}}
+{"t": 5.834, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "completed", "command_uuid": "$IN1"}}
+{"t": 5.836, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "started", "command_uuid": "$IN2"}}
+{"t": 5.862, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "hook_response", "hook_event": "SessionStart"}}
+{"t": 6.16, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 7.05, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 7.079, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "text", "text": "TWO0"}]}}}
+{"t": 7.298, "dir": "out", "line": {"type": "result", "session_id": "s1137-s4_queued_gap", "subtype": "success", "is_error": false, "num_turns": 1, "result": "TWO0", "usage": {"input_tokens": 10, "output_tokens": 54, "cache_creation_input_tokens": 273, "cache_read_input_tokens": 25813}}}
+{"t": 7.3, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "completed", "command_uuid": "$IN2"}}
+{"t": 10.506, "dir": "in", "n": 3}
+{"t": 10.506, "dir": "in", "n": 4}
+{"t": 10.523, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "queued", "command_uuid": "$IN3"}}
+{"t": 10.535, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "started", "command_uuid": "$IN3"}}
+{"t": 10.545, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "queued", "command_uuid": "$IN4"}}
+{"t": 11.161, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 12.019, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 12.031, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "text", "text": "ONE1"}]}}}
+{"t": 12.181, "dir": "out", "line": {"type": "result", "session_id": "s1137-s4_queued_gap", "subtype": "success", "is_error": false, "num_turns": 1, "result": "ONE1", "usage": {"input_tokens": 10, "output_tokens": 45, "cache_creation_input_tokens": 101, "cache_read_input_tokens": 26086}}}
+{"t": 12.186, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "completed", "command_uuid": "$IN3"}}
+{"t": 12.188, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "started", "command_uuid": "$IN4"}}
+{"t": 12.533, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 13.302, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 13.327, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "text", "text": "TWO1"}]}}}
+{"t": 13.443, "dir": "out", "line": {"type": "result", "session_id": "s1137-s4_queued_gap", "subtype": "success", "is_error": false, "num_turns": 1, "result": "TWO1", "usage": {"input_tokens": 10, "output_tokens": 48, "cache_creation_input_tokens": 93, "cache_read_input_tokens": 26187}}}
+{"t": 13.446, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "completed", "command_uuid": "$IN4"}}
+{"t": 16.513, "dir": "in", "n": 5}
+{"t": 16.514, "dir": "in", "n": 6}
+{"t": 16.514, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "queued", "command_uuid": "$IN5"}}
+{"t": 16.516, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "started", "command_uuid": "$IN5"}}
+{"t": 16.555, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "queued", "command_uuid": "$IN6"}}
+{"t": 16.85, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 17.707, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 17.713, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "text", "text": "ONE2"}]}}}
+{"t": 17.883, "dir": "out", "line": {"type": "result", "session_id": "s1137-s4_queued_gap", "subtype": "success", "is_error": false, "num_turns": 1, "result": "ONE2", "usage": {"input_tokens": 10, "output_tokens": 45, "cache_creation_input_tokens": 95, "cache_read_input_tokens": 26280}}}
+{"t": 17.887, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "completed", "command_uuid": "$IN5"}}
+{"t": 17.892, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "started", "command_uuid": "$IN6"}}
+{"t": 18.245, "dir": "out", "line": {"type": "system", "session_id": "s1137-s4_queued_gap", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 18.966, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 19.004, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s4_queued_gap", "message": {"role": "assistant", "content": [{"type": "text", "text": "TWO2"}]}}}
+{"t": 19.127, "dir": "out", "line": {"type": "result", "session_id": "s1137-s4_queued_gap", "subtype": "success", "is_error": false, "num_turns": 1, "result": "TWO2", "usage": {"input_tokens": 10, "output_tokens": 48, "cache_creation_input_tokens": 93, "cache_read_input_tokens": 26375}}}
+{"t": 19.128, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s4_queued_gap", "state": "completed", "command_uuid": "$IN6"}}

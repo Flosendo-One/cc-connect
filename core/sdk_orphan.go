@@ -82,6 +82,14 @@ func (e *Engine) orphanLoop(state *interactiveState, ch <-chan Event) {
 		case EventError:
 			e.flushOrphanTurn(state, turn, evt.Error)
 			turn = newOrphanTurn()
+		case EventFlosendoTurnMoved:
+			// EDEN-1137: one of our messages was taken into this turn, so the rest of it is the engine turn's
+			// reply. What came before is the self-fired part: its text is posted now as a wakeup (a tool-only part
+			// posts nothing), without waiting for the session lock, which the engine's turn holds.
+			if len(turn.text) > 0 {
+				e.flushOrphanTurnNow(state, turn)
+			}
+			turn = newOrphanTurn()
 		}
 	}
 	// Channel closed (session ended). Flush any pending turn so partial
@@ -142,6 +150,16 @@ func (e *Engine) respondOrphanPermission(state *interactiveState, evt Event) {
 // followed by the model's text response (and a brief tool-use summary when
 // the model used tools). errOpt is non-nil when the turn ended in EventError.
 func (e *Engine) flushOrphanTurn(state *interactiveState, turn *orphanTurn, errOpt error) {
+	e.flushOrphanTurnWith(state, turn, errOpt, true)
+}
+
+// flushOrphanTurnNow renders the part of a turn before it moved to the engine (EDEN-1137) without waiting for the
+// session lock: the engine turn holding it is the one that will post the rest.
+func (e *Engine) flushOrphanTurnNow(state *interactiveState, turn *orphanTurn) {
+	e.flushOrphanTurnWith(state, turn, nil, false)
+}
+
+func (e *Engine) flushOrphanTurnWith(state *interactiveState, turn *orphanTurn, errOpt error, waitLock bool) {
 	if state == nil || turn.empty() && errOpt == nil {
 		return
 	}
@@ -185,7 +203,7 @@ func (e *Engine) flushOrphanTurn(state *interactiveState, turn *orphanTurn, errO
 	if mgr == nil {
 		mgr = e.sessionManager()
 	}
-	if mgr != nil {
+	if mgr != nil && waitLock {
 		if sess := mgr.byKey(sessionKey); sess != nil {
 			for time.Now().Before(deadline) {
 				if sess.TryLock() {
@@ -197,7 +215,7 @@ func (e *Engine) flushOrphanTurn(state *interactiveState, turn *orphanTurn, errO
 			}
 		}
 	}
-	if !gotLock {
+	if !gotLock && waitLock {
 		slog.Info("orphan: rendering without session lock", "session_key", sessionKey, "wait", orphanWaitForLockMax)
 	}
 

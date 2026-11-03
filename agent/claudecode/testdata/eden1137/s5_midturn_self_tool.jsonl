@@ -1,0 +1,39 @@
+# EDEN-1137 D0: s5_midturn_self_tool, real claude 2.1.286 (haiku), trimmed by minimize.py; dir in = the bridge writes message n
+{"t": 0.003, "dir": "in", "n": 1}
+{"t": 1.632, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.633, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.765, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "hook_response", "hook_event": "SessionStart"}}
+{"t": 2.206, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s5_midturn_self_tool", "state": "queued", "command_uuid": "$IN1"}}
+{"t": 2.241, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s5_midturn_self_tool", "state": "started", "command_uuid": "$IN1"}}
+{"t": 2.825, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 2.924, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "hook_progress", "hook_event": "SessionStart"}}
+{"t": 3.947, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 4.723, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 4.725, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 4.925, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "hook_progress", "hook_event": "SessionStart"}}
+{"t": 5.125, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "tool_use", "name": "Bash", "id": "toolu_1137", "input": {"command": "sleep 6; echo BGDONE", "run_in_background": true}}]}}}
+{"t": 5.144, "dir": "out", "line": {"type": "rate_limit_event", "session_id": "s1137-s5_midturn_self_tool"}}
+{"t": 5.336, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "background_tasks_changed"}}
+{"t": 5.339, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "task_started", "task_id": "b63g7pajf", "is_backgrounded": true}}
+{"t": 5.43, "dir": "out", "line": {"type": "user", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_1137", "content": "(tool output)"}]}}}
+{"t": 5.445, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "hook_response", "hook_event": "SessionStart"}}
+{"t": 6.418, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 6.431, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "text", "text": "STARTED"}]}}}
+{"t": 6.557, "dir": "out", "line": {"type": "result", "session_id": "s1137-s5_midturn_self_tool", "subtype": "success", "is_error": false, "num_turns": 2, "result": "STARTED", "usage": {"input_tokens": 18, "output_tokens": 238, "cache_creation_input_tokens": 7108, "cache_read_input_tokens": 45028}}}
+{"t": 6.56, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s5_midturn_self_tool", "state": "completed", "command_uuid": "$IN1"}}
+{"t": 11.351, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "background_tasks_changed"}}
+{"t": 11.351, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "task_updated", "task_id": "b63g7pajf"}}
+{"t": 11.351, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "task_notification", "task_id": "b63g7pajf", "status": "completed"}}
+{"t": 11.648, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 12.739, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 12.983, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "tool_use", "name": "Bash", "id": "toolu_1137", "input": {"command": "sleep 8"}}]}}}
+{"t": 14.132, "dir": "in", "n": 2}
+{"t": 14.135, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s5_midturn_self_tool", "state": "queued", "command_uuid": "$IN2"}}
+{"t": 16.098, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "task_started", "task_id": "bmo5oyhym", "is_backgrounded": false}}
+{"t": 21.102, "dir": "out", "line": {"type": "system", "session_id": "s1137-s5_midturn_self_tool", "subtype": "task_notification", "task_id": "bmo5oyhym", "status": "completed"}}
+{"t": 21.201, "dir": "out", "line": {"type": "user", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_1137", "content": "(tool output)"}]}}}
+{"t": 21.418, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s5_midturn_self_tool", "state": "started", "command_uuid": "$IN2"}}
+{"t": 22.254, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 22.295, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s5_midturn_self_tool", "message": {"role": "assistant", "content": [{"type": "text", "text": "HANDLED\n\nTHIRD"}]}}}
+{"t": 22.385, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s5_midturn_self_tool", "state": "completed", "command_uuid": "$IN2"}}
+{"t": 22.388, "dir": "out", "line": {"type": "result", "session_id": "s1137-s5_midturn_self_tool", "subtype": "success", "is_error": false, "num_turns": 2, "origin": {"kind": "task-notification", "producer": "session-task"}, "result": "HANDLED\n\nTHIRD", "usage": {"input_tokens": 18, "output_tokens": 148, "cache_creation_input_tokens": 565, "cache_read_input_tokens": 52810}}}

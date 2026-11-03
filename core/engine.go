@@ -592,6 +592,9 @@ type interactiveState struct {
 	// currentTurnUserMessageTimeMs is the UserMessageTimeMs for the in-flight
 	// foreground turn (including a queued turn after EventResult).
 	currentTurnUserMessageTimeMs int64
+	// flosendoTurnFirstLine is the first line of the message the in-flight turn answers (EDEN-1137: the not-taken
+	// notice quotes it).
+	flosendoTurnFirstLine string
 }
 
 // latestUserMessageWatermarkLocked returns the highest UserMessageTimeMs among
@@ -3912,6 +3915,7 @@ func (e *Engine) processInteractiveMessageWith(p Platform, msg *Message, session
 	state.replyCtx = msg.ReplyCtx
 	state.currentMessageID = msg.MessageID
 	state.currentTurnUserMessageTimeMs = msg.UserMessageTimeMs
+	state.flosendoTurnFirstLine = queuedFirstLine(msg.Content) // EDEN-1137
 	state.canonicalSessionKey = msg.SessionKey
 	state.sessionManager = sessions
 	state.injectPrompt = e.getInjectPrompt(msg.SessionKey)
@@ -5362,7 +5366,19 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 		turnDeadlineCh = turnDeadlineTimer.C
 	}
 
-	events := state.agentSession.Events()
+	// EDEN-1137 item 13: take the agent session once, under its lock. A /new that lands after this turn started
+	// (cleanupInteractiveState sets it to nil) made the next line dereference nil, and with no recover in the turn's
+	// goroutine the whole bridge stopped (upstream defect, found under EDEN-1759).
+	state.mu.Lock()
+	agentSession := state.agentSession
+	state.mu.Unlock()
+	if agentSession == nil {
+		slog.Warn("flosendo: the session was reset before this turn read its events; ending the turn", "session_key", sessionKey)
+		sp.discard()
+		return
+	}
+	defer flosendoSettleTurn(agentSession) // EDEN-1137 D3d: every way this turn ends settles the agent's count
+	events := agentSession.Events()
 	stopCh := state.stopSignal()
 	for {
 		var event Event
@@ -5376,9 +5392,21 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 			if !ok {
 				goto channelClosed
 			}
+			if event.Type == EventFlosendoNotTaken {
+				// EDEN-1137: the CLI never took this turn's message in; the notice is the turn's reply. A signal
+				// that outlived the turn it was for is dropped.
+				if !flosendoNotTakenCurrent(agentSession, event) {
+					slog.Info("flosendo: a not-taken signal from a turn that has ended; ignored", "session_key", sessionKey)
+					continue
+				}
+				event = flosendoNotTakenResult(state, sessionKey)
+			}
 			// Real activity followed the phantom result — the turn is alive,
 			// so the phantom must never be resurrected by its timer.
-			disarmPhantom()
+			// EDEN-1137 D3a: only model output counts as activity.
+			if flosendoDisarmsPhantom(event) {
+				disarmPhantom()
+			}
 		case <-phantomCh:
 			// Nothing followed the ignored result within the grace window;
 			// treat it as this turn's real result after all.
@@ -5449,7 +5477,7 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 		graceLoop:
 			for {
 				select {
-				case evt, ok := <-state.agentSession.Events():
+				case evt, ok := <-agentSession.Events():
 					if !ok || (ok && evt.Done) {
 						// Agent exited cleanly; state is intact, resume will work.
 						slog.Info("agent exited gracefully after max_turn_time stop signal",
@@ -5957,7 +5985,7 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 
 			if autoApprove && !isAskQuestion {
 				slog.Debug("auto-approving (approve-all)", "request_id", event.RequestID, "tool", event.ToolName)
-				_ = state.agentSession.RespondPermission(event.RequestID, PermissionResult{
+				_ = agentSession.RespondPermission(event.RequestID, PermissionResult{
 					Behavior:     "allow",
 					UpdatedInput: event.ToolInputRaw,
 				})
@@ -6480,6 +6508,7 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 				state.currentMessageID = queued.messageID
 				state.fromVoice = queued.fromVoice
 				state.currentTurnUserMessageTimeMs = queued.userMessageTimeMs
+				state.flosendoTurnFirstLine = queuedFirstLine(queued.content) // EDEN-1137
 				state.mu.Unlock()
 
 				// Stop the previous turn's typing indicator
@@ -6497,7 +6526,7 @@ func (e *Engine) processInteractiveEvents(state *interactiveState, session *Sess
 				// Drain stale events before starting the next turn. Between
 				// EventResult and Send(), the only buffered events would be
 				// stale leftovers (e.g. a deferred EventError from cmd.Wait()).
-				drainEvents(state.agentSession.Events())
+				drainEvents(agentSession.Events())
 
 				if pendingSend != nil {
 					if err := <-pendingSend; err != nil {

@@ -1,0 +1,19 @@
+# EDEN-1137 D0: s1b_resumed, real claude 2.1.286 (haiku), trimmed by minimize.py; dir in = the bridge writes message n
+{"t": 0.002, "dir": "in", "n": 1}
+{"t": 1.227, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.531, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "task_notification", "task_id": "brtlf2nlb", "status": "stopped"}}
+{"t": 1.573, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s1b_resumed", "state": "queued", "command_uuid": "$IN1"}}
+{"t": 1.688, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 1.69, "dir": "out", "line": {"type": "result", "session_id": "s1137-s1b_resumed", "subtype": "success", "is_error": false, "num_turns": 0, "origin": {"kind": "task-notification"}, "result": "", "usage": {"input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}
+{"t": 1.691, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s1b_resumed", "state": "started", "command_uuid": "$IN1"}}
+{"t": 2.352, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 2.51, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "hook_progress", "hook_event": "SessionStart"}}
+{"t": 3.51, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "hook_progress", "hook_event": "SessionStart"}}
+{"t": 3.546, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 3.623, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "thinking_tokens", "user_message_uuid": "$IN1"}}
+{"t": 3.627, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s1b_resumed", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 3.649, "dir": "out", "line": {"type": "assistant", "session_id": "s1137-s1b_resumed", "message": {"role": "assistant", "content": [{"type": "text", "text": "PONG"}]}}}
+{"t": 3.671, "dir": "out", "line": {"type": "rate_limit_event", "session_id": "s1137-s1b_resumed"}}
+{"t": 3.764, "dir": "out", "line": {"type": "result", "session_id": "s1137-s1b_resumed", "subtype": "success", "is_error": false, "num_turns": 1, "result": "PONG", "usage": {"input_tokens": 10, "output_tokens": 67, "cache_creation_input_tokens": 355, "cache_read_input_tokens": 26200}}}
+{"t": 3.766, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1137-s1b_resumed", "state": "completed", "command_uuid": "$IN1"}}
+{"t": 18.811, "dir": "out", "line": {"type": "system", "session_id": "s1137-s1b_resumed", "subtype": "hook_response", "hook_event": "SessionStart"}}

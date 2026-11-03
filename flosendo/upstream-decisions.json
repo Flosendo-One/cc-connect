@@ -295,7 +295,7 @@
     "781ead2b": {
       "subject": "fix(core): generation-counted session busy lock with stale-break self-heal and stop-path release (#1838)",
       "verdict": "watch",
-      "why": "Busy-lock self-heal (generation-counted TryLock; breaks a lock held past busy_timeout when the agent process is dead). CORRECTION 9 Oct 2026: the symptom HAS happened to us - EDEN-1137 records two full freezes (#eden-dev 11 Sep, #eden-two 22 Sep: a session stuck busy, Ivan's messages queued until a restart), and its warning sign (\"orphan: rendering without session lock\") fired 8 times on 9 Oct. Being scored under EDEN-1137 against a smaller fork-local fix: large (+728/-171), touches 6 files we patched and every Unlock site, and changes TryLock's signature (our nudge fix 6ed03c23/79cfad75 calls it)."
+      "why": "Busy-lock self-heal (generation-counted TryLock; breaks a lock held past busy_timeout when the agent process is dead). CORRECTION 9 Oct 2026: the symptom HAS happened to us - EDEN-1137 records two full freezes (#eden-dev 11 Sep, #eden-two 22 Sep: a session stuck busy, Ivan's messages queued until a restart), and its warning sign (\"orphan: rendering without session lock\") fired 8 times on 9 Oct. Being scored under EDEN-1137 against a smaller fork-local fix: large (+728/-171), touches 6 files we patched and every Unlock site, and changes TryLock's signature (our nudge fix 6ed03c23/79cfad75 calls it). SCORED under EDEN-1137, 2 Nov 2026: the freezes were not a lock held by a dead process, which is what this heals, but a live turn waiting for a reply the bridge had routed to the wakeup path (a resume's synthetic result, or a message folded into a turn the CLI started itself); EDEN-1137 fixed the routing with the CLI's command lifecycle. Stays watch: take it if a session stays busy with its agent process gone."
     },
     "091420be": {
       "subject": "fix(claudecode,core): drive auto-compress from exact transcript usage, gate heuristic behind allow_heuristic (#1845)",
@@ -429,13 +429,13 @@
     },
     "80bdf304": {
       "subject": "fix(claudecode): drop empty task-notification result on --resume; flush partial unsolicited text on cancel",
-      "verdict": "watch",
-      "why": "It could hit us: we resume sessions (8 resumed spawns, 9-26 Oct) and agents leave long shell jobs running in the background. It has not happened: 0 of 355 turns ended empty (the smallest reply was 8 chars, a NO_REPLY). Symptom that would make us take it: a turn posted as an empty response after a resume. The core half's flushPartial posts text without unsolicitedOutbound, so it skips our NO_REPLY patch (a054387f), and it would start posting text from the 222 unsolicited streams that now end cancelled. If taken, only the claudecode half, or with the flush routed through unsolicitedOutbound. It conflicts in agent/claudecode/session.go and needs Ivan."
+      "verdict": "adopt",
+      "why": "ADOPTED 2 Nov 2026 under EDEN-1137, the claudecode half only (isEmptyTaskNotificationResult and its drop in handleResult, verbatim). The watch symptom happened: on 2 Nov the first prompt into a resumed session got the synthetic task-notification result 3 times out of 3, and #eden-dev's session was killed by the idle timeout at 09:51:46Z with its background job. EDEN-1137's probe of the real CLI 2.1.286 found the same fields (origin.kind task-notification, num_turns 0, empty, zero usage). The core half (flushPartial) stays out: it posts without unsolicitedOutbound, so it would skip our NO_REPLY patch (a054387f), and it conflicts with the EDEN-1618 queue code; EDEN-1137's lifecycle routing covers that path. Ruled by the chief of staff under Ivan's 9 Oct rule (EDEN-1137 comment 95053b0a; 'needs Ivan' was the scorer's flag), flagged to Ivan after the fact."
     },
     "0bfbd23d": {
       "subject": "fix(core): keep flushed unsolicited partial ordered before next turn",
-      "verdict": "watch",
-      "why": "Follow-up to 80bdf304's flushPartial, so it stands or falls with that commit. It conflicts in core/engine.go and engine_test.go."
+      "verdict": "declined",
+      "why": "Follow-up to 80bdf304's core half (flushPartial), which stays out (EDEN-1137, 2 Nov 2026: it would skip our NO_REPLY patch and conflicts with the EDEN-1618 queue code). Only the claudecode half of 80bdf304 was taken."
     },
     "63299ef4": {
       "subject": "fix(core): log compression turn completion before queued turns",
@@ -524,8 +524,8 @@
     },
     "0fc83304": {
       "subject": "test: check e.Stop error in unsolicited flush test (errcheck)",
-      "verdict": "watch",
-      "why": "Lint fix to 80bdf304's test, so take it with 80bdf304 or not at all."
+      "verdict": "declined",
+      "why": "Lint fix to 80bdf304's core-half test, which we did not take (EDEN-1137, 2 Nov 2026: only the claudecode half of 80bdf304 was adopted)."
     },
     "c3079ad3": {
       "subject": "fix(gemini): preserve options when creating workspace agents",
@@ -822,6 +822,23 @@
         "flosendo/test_queued.sh"
       ],
       "upstream_conflict_risk": "core/engine.go, five small hunks; an upstream change to notifyDroppedQueuedMessages, the idle-timeout case or Engine.Stop needs these re-applied."
+    },
+    "EDEN-1137": {
+      "what": "Each CLI turn is routed by the CLI's own command lifecycle. Send puts a uuid on each message; the CLI echoes it as command_uuid in command_lifecycle (queued, started, completed). Once it has echoed one, a turn's events go to the engine's turn exactly when one of our commands has started, else to the wakeup path; when ours starts inside a turn already going to the wakeup path, the turn moves to the engine (the part before is flushed as a wakeup, text only, at once). If a turn's result has come, ours is still only queued and the CLI writes nothing for 30 s, the engine's turn ends with EDEN-1618's 'Not processed' notice; the quiet is not counted from a turn's system init to its result, and a message the CLI ends without starting it (cancelled, discarded, completed with no started) ends the turn at once. The signal names the messages it gives up on and the engine acts on it only while the agent says it is current (the latest one, until the engine's turn settles). Also: 80bdf304's claudecode half (the resume's empty task-notification result is dropped); system lines and tool results follow the open turn (D1b); a compaction result (Done=false) keeps the turn (D2); only model output disarms the phantom grace (D3a); every engine turn end calls SettleTurn (D3d); processInteractiveEvents takes the agent session under its lock once, so a /new before its event loop ends the turn instead of a nil dereference that stopped the bridge (upstream defect). One log line per session names the mode: 'flosendo: turn routing by command lifecycle' or '... by counter'. A CLI that never echoes keeps the counter (declared limit: there, a message folded into a self-fired turn still waits for the idle kill).",
+      "why": "EDEN-1137: a session stuck busy until the idle kill: 22 Oct (the chief of staff's channel, a message folded into a self-fired turn) and 2 Nov 09:51Z (#eden-dev, a resume's synthetic result; its background job died with it). Ivan: 'i want to be able to continue building even if i am not on the office' (7 Oct) and 'alright, continue all the build 24/7' (2 Nov). The probe of the real CLI 2.1.286 (D0) reproduced both shapes and a third (a message answered as a wakeup, the self-fired text as the reply).",
+      "files": [
+        "agent/claudecode/flosendo_turn_routing.go",
+        "agent/claudecode/session.go (Send's uuid, the command_lifecycle case, emitEvent's channel choice, the two bypasses, the 80bdf304 drop, the system init's pause, the quiet timer's stop before the channels close)",
+        "core/flosendo_turn_routing.go",
+        "core/engine.go (processInteractiveEvents: the session taken once under its lock, SettleTurn deferred, the not-taken result once its signal is current, the grace disarmed by model output only; the turn's first line on interactiveState)",
+        "core/sdk_orphan.go (EventFlosendoTurnMoved: flush the text before the move at once)"
+      ],
+      "tests": [
+        "agent/claudecode/flosendo_turn_routing_test.go (the real CLI's lines replayed: testdata/eden1137/)",
+        "agent/claudecode/flosendo_turn_routing_unit_test.go",
+        "core/flosendo_turn_routing_test.go"
+      ],
+      "upstream_conflict_risk": "agent/claudecode/session.go: emitEvent, handleSystem, handleUser, handleResult, Send (small hunks); core/engine.go: the head of processInteractiveEvents' event loop and two lines in it; core/sdk_orphan.go: orphanLoop and flushOrphanTurn. An upstream change to the turn router or the orphan handler needs these re-applied."
     }
   }
 }

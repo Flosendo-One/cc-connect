@@ -35,7 +35,8 @@ type claudeSession struct {
 	orphanEvents    chan core.Event // events arriving outside an active Send() turn (SDK self-fired wakeups); see core/sdk_orphan.go
 	inTurn          atomic.Int32    // count of user turns in flight; set by Send(), decremented by terminal events. A count > 0 means the next event belongs to a user turn (routes to cs.events); 0 means it is an SDK self-fired wakeup (routes to cs.orphanEvents). A counter, not a bool, so pipelined sends (several Send calls before the first result is drained) keep every result on the active channel.
 	turnChannel     chan core.Event // chosen at first event of each turn, released on terminal event; prevents a concurrent Send during an orphan turn from rerouting the tail
-	turnMu          sync.Mutex      // guards turnChannel
+	turnMu          sync.Mutex      // guards turnChannel and turns
+	turns           flosendoTurns   // EDEN-1137: our messages by uuid and the routing mode (flosendo_turn_routing.go)
 	sessionID       atomic.Value    // stores string
 	permissionMode  atomic.Value    // stores string
 	autoApprove     atomic.Bool
@@ -572,6 +573,7 @@ func (cs *claudeSession) finishReadLoop(waitErrCh <-chan error, stderrBuf *bytes
 	// orphan handler) rely on these closures to observe session end.
 	// orphanEvents may be nil in unit tests that construct claudeSession by
 	// hand (without invoking newClaudeSession); skip the close in that case.
+	cs.flosendoCloseTurns() // EDEN-1137: the quiet timer must not send on a closed channel
 	close(cs.events)
 	if cs.orphanEvents != nil {
 		close(cs.orphanEvents)
@@ -603,6 +605,7 @@ func (cs *claudeSession) handleReadLoopLine(line string) {
 	if line == "" {
 		return
 	}
+	cs.flosendoLine() // EDEN-1137: any line resets the quiet check
 
 	var raw map[string]any
 	if err := json.Unmarshal([]byte(line), &raw); err != nil {
@@ -627,6 +630,8 @@ func (cs *claudeSession) handleReadLoopLine(line string) {
 	case "control_cancel_request":
 		requestID, _ := raw["request_id"].(string)
 		slog.Debug("claudeSession: permission cancelled", "request_id", requestID)
+	case "command_lifecycle":
+		cs.handleCommandLifecycle(raw) // EDEN-1137
 	default:
 		// Unknown event types are not silently dropped — they are logged
 		// at debug level with the full payload so future diagnosis of
@@ -646,6 +651,22 @@ func isCompactionResult(raw map[string]any) bool {
 	return resultSubtype(raw) == "compact" || resultSubtype(raw) == "compaction"
 }
 
+// isEmptyTaskNotificationResult reports whether a `type:"result"` event
+// closes a CLI-internal task-notification turn that produced no output and
+// made no model call. Such results are never a reply to a prompt sent by
+// cc-connect (see handleResult).
+func isEmptyTaskNotificationResult(raw map[string]any, content string) bool {
+	if content != "" {
+		return false
+	}
+	origin, _ := raw["origin"].(map[string]any)
+	if kind, _ := origin["kind"].(string); kind != "task-notification" {
+		return false
+	}
+	turns, ok := raw["num_turns"].(float64)
+	return ok && turns == 0
+}
+
 // resultSubtype extracts the optional `subtype` field from a result
 // event payload. Empty string when missing.
 func resultSubtype(raw map[string]any) string {
@@ -656,6 +677,9 @@ func resultSubtype(raw map[string]any) string {
 }
 
 func (cs *claudeSession) handleSystem(raw map[string]any) {
+	if subtype, _ := raw["subtype"].(string); subtype == "init" {
+		cs.flosendoCLITurn(true) // EDEN-1137: each turn opens with one (D0); the quiet check waits for its result
+	}
 	if model, ok := raw["model"].(string); ok && model != "" {
 		cs.activeModel.Store(model)
 	}
@@ -666,10 +690,9 @@ func (cs *claudeSession) handleSystem(raw map[string]any) {
 		// counterpart, so going through the channel-lock path would
 		// permanently snapshot turnChannel based on whatever cs.inTurn
 		// happened to be at startup, mis-routing every subsequent real turn.
-		select {
-		case cs.events <- core.Event{Type: core.EventText, SessionID: sid}:
-		case <-cs.ctx.Done():
-		}
+		// EDEN-1137 D1b: it follows the open turn's channel, so a turn going to the wakeup path does not feed the
+		// engine's turn (flosendo_turn_routing.go, bypassChannel).
+		cs.emitBypass(core.Event{Type: core.EventText, SessionID: sid})
 	}
 }
 
@@ -812,9 +835,9 @@ func (cs *claudeSession) handleUser(raw map[string]any) {
 				ToolExitCode: &code,
 				ToolSuccess:  &success,
 			}
-			select {
-			case cs.events <- evt:
-			case <-cs.ctx.Done():
+			// EDEN-1137 D1b: a tool result follows the open turn's channel, like a system line.
+			cs.emitBypass(evt)
+			if cs.ctx.Err() != nil {
 				return
 			}
 		}
@@ -828,6 +851,25 @@ func (cs *claudeSession) handleResult(raw map[string]any) {
 	}
 	if sid, ok := raw["session_id"].(string); ok && sid != "" {
 		cs.sessionID.Store(sid)
+	}
+
+	// On --resume, Claude Code first replays task notifications for
+	// background shell tasks that did not finish before the previous process
+	// exited ("Background shell command didn't finish before the previous
+	// session ended"). Each one is closed with a synthetic result that has
+	// origin.kind == "task-notification", no model call (num_turns == 0) and
+	// an empty result. It is emitted right after the process starts — i.e.
+	// after cc-connect has already written the user's prompt to stdin — so
+	// forwarding it as EventResult{Done:true} makes the engine finish the
+	// user's turn with "(empty response)" and push the real reply into the
+	// unsolicited relay. It carries nothing to deliver, so drop it.
+	// (Upstream 80bdf304's claudecode half, taken under EDEN-1137: D0 found
+	// the same fields on CLI 2.1.286, and it killed a session on 2 Nov.)
+	if isEmptyTaskNotificationResult(raw, content) {
+		slog.Info("claudeSession: dropping empty task-notification result (no model call)",
+			"session_id", cs.CurrentSessionID())
+		cs.flosendoCLITurn(false) // EDEN-1137: it closes the turn its system init opened (D0 s1b)
+		return
 	}
 
 	// Claude Code's stream-json schema: result events carry a `subtype` field
@@ -1011,16 +1053,23 @@ func (cs *claudeSession) Send(prompt string, messageID string, images []core.Ima
 	// stdin write fails below we revert the flag so a never-started turn
 	// doesn't leave inTurn stuck true.
 	cs.inTurn.Add(1)
+	// EDEN-1137: the CLI echoes this uuid as command_uuid in command_lifecycle events, which say which turn takes
+	// the message (flosendo_turn_routing.go).
+	cmdID := cs.flosendoNewCommand()
 	sent := false
 	defer func() {
 		if !sent {
 			cs.inTurn.Add(-1)
+			cs.flosendoForgetCommand(cmdID)
+		} else {
+			cs.flosendoSent()
 		}
 	}()
 
 	if len(images) == 0 && len(files) == 0 {
 		if err := cs.writeJSON(map[string]any{
 			"type":    "user",
+			"uuid":    cmdID,
 			"message": map[string]any{"role": "user", "content": prompt},
 		}); err != nil {
 			return err
@@ -1083,6 +1132,7 @@ func (cs *claudeSession) Send(prompt string, messageID string, images []core.Ima
 
 	if err := cs.writeJSON(map[string]any{
 		"type":    "user",
+		"uuid":    cmdID,
 		"message": map[string]any{"role": "user", "content": parts},
 	}); err != nil {
 		return err
@@ -1200,23 +1250,19 @@ func (cs *claudeSession) OrphanEvents() <-chan core.Event {
 // Falls back to cs.events when cs.orphanEvents is nil so unit tests that
 // construct claudeSession by hand (without invoking newClaudeSession) continue
 // to receive every event on the single channel they expect.
+//
+// EDEN-1137: once the CLI has echoed one of our message uuids, the channel is
+// chosen by the CLI's command lifecycle instead of the counter
+// (flosendo_turn_routing.go: pickChannelLocked, endTurnLocked).
 func (cs *claudeSession) emitEvent(evt core.Event) {
 	cs.turnMu.Lock()
 	if cs.turnChannel == nil {
-		if cs.inTurn.Load() > 0 || cs.orphanEvents == nil {
-			cs.turnChannel = cs.events
-		} else {
-			cs.turnChannel = cs.orphanEvents
-		}
+		cs.turnChannel = cs.pickChannelLocked()
 	}
 	ch := cs.turnChannel
-	if isTerminalEventType(evt.Type) {
-		if ch == cs.events {
-			if cs.inTurn.Add(-1) < 0 {
-				cs.inTurn.Store(0)
-			}
-		}
-		cs.turnChannel = nil
+	terminal := isTerminalEvent(evt)
+	if terminal {
+		cs.endTurnLocked(ch)
 	}
 	cs.turnMu.Unlock()
 
@@ -1226,10 +1272,12 @@ func (cs *claudeSession) emitEvent(evt core.Event) {
 	}
 }
 
-// isTerminalEventType reports whether the event ends a turn (releases the
+// isTerminalEvent reports whether the event ends a turn (releases the
 // snapshotted turnChannel so the next event can re-snapshot fresh).
-func isTerminalEventType(t core.EventType) bool {
-	return t == core.EventResult || t == core.EventError
+// EDEN-1137 D2: a result with Done=false (mid-turn compaction) does not end
+// the turn, so the rest of the turn keeps its channel.
+func isTerminalEvent(evt core.Event) bool {
+	return evt.Type == core.EventError || (evt.Type == core.EventResult && evt.Done)
 }
 
 func (cs *claudeSession) CurrentSessionID() string {
