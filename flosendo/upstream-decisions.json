@@ -1,6 +1,6 @@
 {
   "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
-  "decided_at": "2026-11-02",
+  "decided_at": "2026-11-09",
   "commits": {
     "961655de": {
       "subject": "fix(core): count queued user messages toward reset_on_idle_mins",
@@ -801,6 +801,251 @@
       "subject": "Normalize Atlas Cloud preset comma placement",
       "verdict": "feature-off",
       "why": "Comma placement in e8c09776's Atlas Cloud preset: we configure no providers."
+    },
+    "9dacd8de": {
+      "subject": "feat(telegram): support Telegram Bot API 10.x native rich messages and tables",
+      "verdict": "not-used",
+      "why": "Telegram only: the Bot API 10.x rich-message sender is in platform/telegram, and the core/markdown_html.go functions it changes (MarkdownToSimpleHTML, the new FormatSmartTelegram* and StripANSI) are called only by platform/telegram. Our Slack replies go through MarkdownToSlackMrkdwn (core/markdown_slack.go) and SplitMessageCodeFenceAware, which it leaves alone; its core/engine_test.go line only widens one shell-failure assertion. 716 lines; a test apply (with d1bc78ac) is clean."
+    },
+    "b566e23a": {
+      "subject": "fix(core): reserve closing fences when splitting messages",
+      "verdict": "low-value",
+      "why": "We run this code: every reply is cut by SplitMessageCodeFenceAware at maxPlatformMessageLen = 4000 runes (core/engine.go:30). The bug: a chunk that ends inside a code block can pass 4000 by its closing fence (4 runes), and a fence line near 4000 runes leaves a chunk no room. Slack truncates chat.postMessage text only beyond 40,000 characters, so a 4,004-rune chunk posts whole; 0 msg_too_long or other length errors in the logs 30 Oct-9 Nov. It changes how every long reply is cut, for nothing we would see. 104 lines, no file shared with our patches, a test apply is clean: take it with the next upstream merge."
+    },
+    "962a9e79": {
+      "subject": "fix(claudecode): use rolling fable alias in /model fallback (#1642)",
+      "verdict": "low-value",
+      "why": "/model's fallback list (used only when no models are configured and /v1/models fails) gets the rolling 'fable' alias. Our model is pinned in config.toml (claude-opus-5-5) and nobody typed /model 30 Oct-9 Nov. The chain 4ade78ed, 962a9e79, 8ffbf06f applies cleanly as a test."
+    },
+    "fd6adf43": {
+      "subject": "fix(claudecode): read session transcript lines over 256KB in /list and /history",
+      "verdict": "watch",
+      "why": "Real for our transcripts: 15 of the 252 Claude Code transcripts written 2-9 Nov have a line over 256 KB, and the old reader stops at the first one without saying so, so /list, /switch, /search, /name and /current would show a low message count or no title, and /history would lose every record after it. We type none of those: the commands in the logs 30 Oct-9 Nov are /new 189, /config 5, /stop 1. Adopt (with 38f2603e) when we start to use /list, /switch or /history, e.g. the '/switch <n>' handoff. +84/-2; a test apply conflicts in agent/claudecode/claudecode_test.go."
+    },
+    "88abf669": {
+      "subject": "fix(slack): ignore edited @mentions instead of re-running the agent",
+      "verdict": "feature-off",
+      "why": "The guard sits in the AppMentionEvent branch, and our Slack app receives no app_mention events: 9,608 events 30 Oct-9 Nov, all inner_type=message, 0 'app_mention received'. It changes nothing for a message event, which is how an edit reaches us. A test apply conflicts in platform/slack/slack_test.go (our EDEN-1618 tests)."
+    },
+    "5b7059ea": {
+      "subject": "Add CloudGPU provider preset",
+      "verdict": "feature-off",
+      "why": "Adds a CloudGPU entry to provider-presets.json, like e8c09776's Atlas Cloud: we configure no providers (providerCount=0 at all 281 agent starts, 30 Oct-9 Nov) and the bridge reads presets from upstream's URL at run time (core/provider_presets.go:14), not from this file. A test apply conflicts in provider-presets.json and its test."
+    },
+    "e2f80f97": {
+      "subject": "fix: show native title in current session",
+      "verdict": "low-value",
+      "why": "Test only: asserts /current names the session by the agent's own title, which our fork's currentSessionDisplayName already does (a /name, else the agent's summary; core/engine.go:14348). We never type /current. A test apply conflicts in core/engine_test.go."
+    },
+    "d1bc78ac": {
+      "subject": "fix: address linter warnings in telegram and markdown_html",
+      "verdict": "not-used",
+      "why": "Lint follow-up to 9dacd8de's Telegram sender and table parser (core/markdown_html.go, platform/telegram); none of it is on our Slack path."
+    },
+    "bbea7b0b": {
+      "subject": "test(cron): wait for job completion before test cleanup",
+      "verdict": "watch",
+      "why": "Test only: TestCmdCronExec_TriggersJob/exec waits for the cron store's write before cleanup, ending a 'TempDir RemoveAll ... directory not empty' flake under full-suite load. The test is in our fork (core/engine_test.go:8235) and our builds run nice go test -p 1 ./core/, but no failure of it is recorded (the TempDir flakes of 2 Nov were in our own EDEN-1759 tests). Adopt if it fails in one of our builds. A test apply conflicts in core/engine_test.go."
+    },
+    "38f2603e": {
+      "subject": "test(claudecode): use a small line ceiling in the over-ceiling history test",
+      "verdict": "watch",
+      "why": "Test follow-up to fd6adf43 (the line ceiling becomes a var so its test can use a small one); goes with fd6adf43 if that is adopted."
+    },
+    "8ffbf06f": {
+      "subject": "test(claudecode): check io.WriteString error in models API stub (lint)",
+      "verdict": "low-value",
+      "why": "Lint in 962a9e79's models API test stub; test only."
+    },
+    "4ade78ed": {
+      "subject": "fix(claudecode): refresh /model fallback list with Claude 5 family (#1642)",
+      "verdict": "low-value",
+      "why": "Adds claude-fable-5 to the same /model fallback list (962a9e79 then swaps it for 'fable'); same reason as 962a9e79."
+    },
+    "de566c63": {
+      "subject": "docs(i18n): add Russian Management API and Bridge protocol specs",
+      "verdict": "low-value",
+      "why": "Docs only: Russian translation of the Management API and Bridge protocol specs."
+    },
+    "4f1d3360": {
+      "subject": "test(blackbox): drive the real binary over the bridge and add capability profiles",
+      "verdict": "low-value",
+      "why": "Test only: upstream's tests/blackbox suite (built with -tags blackbox) driving the real binary, which we do not run; the only file it shares with our tree is the Makefile; no runtime change."
+    },
+    "d8ec1126": {
+      "subject": "docs(i18n): add Russian usage guide",
+      "verdict": "low-value",
+      "why": "Docs only: Russian usage guide."
+    },
+    "3d1cf5fb": {
+      "subject": "feat(opencode): honor native skill permissions via SkillCatalogProvider",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "398ad77f": {
+      "subject": "test(blackbox): add a scripted fake model so agent turns run without a key",
+      "verdict": "low-value",
+      "why": "Test only: a scripted fake model for tests/blackbox, with upstream's CI job and Makefile targets for it; we run neither; no runtime change."
+    },
+    "d8039f42": {
+      "subject": "docs(i18n): add Russian README and language links",
+      "verdict": "low-value",
+      "why": "Docs only: Russian README and language links."
+    },
+    "ab6f8715": {
+      "subject": "feat(acp): support compact, context usage, and form elicitation for kimi acp",
+      "verdict": "not-used",
+      "why": "For agent/acp (Kimi), which we do not run (Slack + Claude Code only)."
+    },
+    "69102b40": {
+      "subject": "test(blackbox): teach the fake model the OpenAI Responses API for Codex",
+      "verdict": "not-used",
+      "why": "Test only: the blackbox fake model learns the OpenAI Responses API, for agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "e842bfd4": {
+      "subject": "docs(i18n): add Russian Telegram and Discord guides",
+      "verdict": "low-value",
+      "why": "Docs only: Russian Telegram and Discord guides, for platforms we do not run."
+    },
+    "3ba24790": {
+      "subject": "fix(pi): merge custom providers into model list and make reasoning efforts model-aware",
+      "verdict": "not-used",
+      "why": "For agent/pi, which we do not run (Slack + Claude Code only)."
+    },
+    "87713610": {
+      "subject": "test(blackbox): release smoke gate with critical-journey scenarios",
+      "verdict": "low-value",
+      "why": "Test only: upstream's release smoke gate (tests/blackbox journeys); no runtime change."
+    },
+    "6c0683cc": {
+      "subject": "fix(feishu): recover silent WebSocket connections",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "8c173a8a": {
+      "subject": "fix(feishu): bound name lookups so a hung request cannot hold a message",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "0c908506": {
+      "subject": "feat(acp): model discovery and live switching via configOptions",
+      "verdict": "not-used",
+      "why": "For agent/acp, which we do not run (Slack + Claude Code only)."
+    },
+    "93782a0c": {
+      "subject": "feat(opencode): expose skill directories via SkillProvider",
+      "verdict": "not-used",
+      "why": "For agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "e4d1de4e": {
+      "subject": "fix(pi): handle catalog edge cases and reset unsupported thinking",
+      "verdict": "not-used",
+      "why": "For agent/pi, which we do not run (Slack + Claude Code only)."
+    },
+    "c3e5d30e": {
+      "subject": "test(codex): verify app-server arguments and resumed effort",
+      "verdict": "not-used",
+      "why": "Tests for agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "a825ae8b": {
+      "subject": "fix(feishu): respect application log levels in SDK logger",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "cb475e9e": {
+      "subject": "i18n(ru): complete and clarify Russian web UI translations",
+      "verdict": "low-value",
+      "why": "Russian strings for the web UI; our language is en."
+    },
+    "d2b5f7cf": {
+      "subject": "fix(feishu): keep progress card panels collapsed while running",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "0907f6a8": {
+      "subject": "fix(wps-xiezuo): parse style_content in rich text messages",
+      "verdict": "not-used",
+      "why": "For platform/wps-xiezuo, which we do not run (Slack + Claude Code only)."
+    },
+    "ca389b67": {
+      "subject": "fix(feishu): warn when a name lookup request fails",
+      "verdict": "not-used",
+      "why": "For platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "e4022436": {
+      "subject": "test(blackbox): prove the release artifact was tested; run the strict gate in CI",
+      "verdict": "low-value",
+      "why": "Test and CI only: tests/blackbox and upstream's release workflow; no runtime change."
+    },
+    "82629446": {
+      "subject": "test(feishu): isolate recovery binary home and data directory",
+      "verdict": "not-used",
+      "why": "Tests for platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "e062a2ce": {
+      "subject": "test(engine_matrix): wait for session store quiescence before TempDir cleanup",
+      "verdict": "low-value",
+      "why": "Test only: tests/release_local/engine_matrix waits for the session store before TempDir cleanup (a CI flake); we do not run that suite; no runtime change."
+    },
+    "36b9238a": {
+      "subject": "test(feishu): serve the Open API locally in card-action tests",
+      "verdict": "not-used",
+      "why": "Tests for platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "85f7d1a3": {
+      "subject": "fix(cursor): stop inventing models when CLI discovery fails",
+      "verdict": "not-used",
+      "why": "For agent/cursor, which we do not run (Slack + Claude Code only)."
+    },
+    "f4c1a96c": {
+      "subject": "test(blackbox): hold releases while /list shows other users' sessions (#1998)",
+      "verdict": "low-value",
+      "why": "Test only, and taken out again by 72b2e961. Worth knowing: it records upstream issue #1998, /list showing another user's sessions and their first message (fix proposed in #2035, not merged). Not reachable for us: allow_from admits only Ivan (EDEN-1314) and we never type /list."
+    },
+    "72b2e961": {
+      "subject": "test(blackbox): drop the #1998 /list check from the release smoke",
+      "verdict": "low-value",
+      "why": "Test only: drops f4c1a96c's #1998 /list check from the release smoke, because #2035 is a product change upstream has not decided."
+    },
+    "3bc33660": {
+      "subject": "test(blackbox): discard close and write errors explicitly for errcheck",
+      "verdict": "low-value",
+      "why": "Lint in tests/blackbox; test only."
+    },
+    "653e94f6": {
+      "subject": "docs(opencode): clarify skill config fallback, minimal YAML, later-wins order, case dedup",
+      "verdict": "not-used",
+      "why": "Docs for agent/opencode's skill config, which we do not run (Slack + Claude Code only)."
+    },
+    "760bb78f": {
+      "subject": "docs: changelog entry for the Feishu name-lookup fix; note card dispatch contract",
+      "verdict": "not-used",
+      "why": "Changelog entry for platform/feishu's name-lookup fix (8c173a8a), which we do not run (Slack + Claude Code only)."
+    },
+    "f0f1c635": {
+      "subject": "test(feishu): attach binary recovery documentation to its test",
+      "verdict": "not-used",
+      "why": "Test docs for platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "b4150417": {
+      "subject": "fix(opencode): satisfy staticcheck QF1006 in walkUpOpencodeProjectSkillDirs",
+      "verdict": "not-used",
+      "why": "Lint in agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "1e02c9c8": {
+      "subject": "test(feishu): handle recovery test listener cleanup",
+      "verdict": "not-used",
+      "why": "Tests for platform/feishu, which we do not run (Slack + Claude Code only)."
+    },
+    "8907c2f8": {
+      "subject": "test(codex): acknowledge fixture close error",
+      "verdict": "not-used",
+      "why": "Test lint for agent/codex, which we do not run (Slack + Claude Code only)."
+    },
+    "47f21088": {
+      "subject": "fix(opencode): satisfy staticcheck QF1001 in stripOpencodeJSONComments",
+      "verdict": "not-used",
+      "why": "Lint in agent/opencode, which we do not run (Slack + Claude Code only)."
     }
   },
   "ours": {
