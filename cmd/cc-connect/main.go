@@ -1351,6 +1351,7 @@ func main() {
 		slog.Info("restart requested via /restart command", "session", req.SessionKey, "platform", req.Platform)
 	}
 
+	core.FlosendoMarkBridgeStopping() // EDEN-1852 S2: from here, an agent's end is the bridge's own
 	slog.Info("shutting down...")
 	if mgmtSrv != nil {
 		mgmtSrv.Stop()

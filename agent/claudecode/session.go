@@ -47,6 +47,7 @@ type claudeSession struct {
 	cancel          context.CancelFunc
 	done            chan struct{}
 	alive           atomic.Bool
+	flosendoExit    flosendoExit // EDEN-1852 S2: what the exit line says (flosendo_agent_exit.go)
 
 	// activeModel stores the model id reported by the CLI's init event (e.g.
 	// "claude-opus-4-7[1m]"). It may be empty if the init event hasn't
@@ -500,6 +501,7 @@ func newClaudeSession(ctx context.Context, workDir, cliBin string, cliExtraArgs 
 	cs.setPermissionMode(mode)
 	cs.sessionID.Store(sessionID)
 	cs.alive.Store(true)
+	cs.flosendoExit.key, cs.flosendoExit.started = flosendoSessionKey(cmd.Env), time.Now() // EDEN-1852 S2
 
 	go cs.readLoop(stdout, &stderrBuf)
 
@@ -555,6 +557,7 @@ func (cs *claudeSession) finishReadLoop(waitErrCh <-chan error, stderrBuf *bytes
 	err := <-waitErrCh
 
 	cs.alive.Store(false)
+	cs.flosendoLogExit() // EDEN-1852 S2: every exit, before the error event below can end the open turn
 	if err != nil {
 		stderrMsg := ""
 		if stderrBuf != nil {
@@ -1386,6 +1389,8 @@ func (cs *claudeSession) Alive() bool {
 const defaultGracefulStopTimeout = 5 * time.Second
 
 func (cs *claudeSession) Close() error {
+	cs.flosendoExit.requested.Store(true) // EDEN-1852 S2: from here, the process's end was asked for
+
 	// Best-effort cleanup of the --append-system-prompt-file temp file on
 	// every exit path. The file is small (~9KB) and OS temp cleanup also
 	// eventually claims it, but explicit removal keeps workdirs tidy.

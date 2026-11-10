@@ -1,0 +1,7 @@
+# EDEN-1852 S2 our message taken in (command_lifecycle started), stopped before the CLI's system init: real claude 2.1.286 lines (from eden1137/s5_midturn_self_tool, session id renamed). The ending is EDEN1852_END, not a row.
+{"t": 0.003, "dir": "in", "n": 1}
+{"t": 1.632, "dir": "out", "line": {"type": "system", "session_id": "s1852", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.633, "dir": "out", "line": {"type": "system", "session_id": "s1852", "subtype": "hook_started", "hook_event": "SessionStart"}}
+{"t": 1.765, "dir": "out", "line": {"type": "system", "session_id": "s1852", "subtype": "hook_response", "hook_event": "SessionStart"}}
+{"t": 2.206, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1852", "state": "queued", "command_uuid": "$IN1"}}
+{"t": 2.241, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1852", "state": "started", "command_uuid": "$IN1"}}
