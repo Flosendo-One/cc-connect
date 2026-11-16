@@ -1,6 +1,6 @@
 {
   "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
-  "decided_at": "2026-11-09",
+  "decided_at": "2026-11-16",
   "commits": {
     "961655de": {
       "subject": "fix(core): count queued user messages toward reset_on_idle_mins",
@@ -1046,6 +1046,401 @@
       "subject": "fix(opencode): satisfy staticcheck QF1001 in stripOpencodeJSONComments",
       "verdict": "not-used",
       "why": "Lint in agent/opencode, which we do not run (Slack + Claude Code only)."
+    },
+    "02eb4b41": {
+      "subject": "merge origin/main into refactor/unify-agent-file-attachment-handling, resolve antigravity conflict",
+      "verdict": "low-value",
+      "why": "A single-parent 'merge' that squashes upstream main of 17 Aug onto the attachment-refactor branch (3f25f4e2, 5f16d8b9): its 8,505 lines are upstream main's own changes, which our fork already has through b39c11f4 (31 Aug); all 84 lines it adds to agent/claudecode/claudecode.go and its test are already in ours. Its own content is the antigravity conflict resolution, which we do not run. Nothing to take on its own."
+    },
+    "b1dd4b28": {
+      "subject": "feat(claudecode): show the CLI's applied effort in the reply footer",
+      "verdict": "low-value",
+      "why": "We run the code: the reply footer is on (reply_footer and show_context_indicator unset, both default true). It shows the CLI's applied effort by sending a get_settings control_request on stdin at start and before every turn and reading the answer. We pass no effort in config, and EDEN-1759's /new effort= is already on each start's 'flosendo: agent start' line, so the footer would gain a word we have never needed. It adds a stdin write before every message in agent/claudecode/session.go, the file EDEN-1137's command-lifecycle routing and EDEN-1852's exit line live in; a test apply conflicts there. Re-score if EDEN-1782's harness needs the CLI's own effort for a default session."
+    },
+    "3775b285": {
+      "subject": "fix(feishu): surface post attachments from quotes, merge-forwards and failed downloads",
+      "verdict": "not-used",
+      "why": "Feishu post attachments (quotes, merge-forwards, failed downloads). Its core/i18n.go change only adds the 'attachment unavailable' key that platform/feishu uses; nothing on our Slack path."
+    },
+    "d12bd8de": {
+      "subject": "fix(slack): tighten base_url validation (follow-up to #2178)",
+      "verdict": "feature-off",
+      "why": "Slack's new optional base_url (a non-default Web API root, for GovSlack or a relay). Our Slack platform sets no base_url (~/.cc-connect/config.toml: app_token, bot_token, share_session_in_channel, allow_from), so the SDK's default root is kept and none of the validation or log masking runs; the 'using custom Web API root' line logs only for a custom root. The chain 002b9d14, 09a9b194, d12bd8de, 26d0eaff, 915b855b, beab357e applies cleanly as a test. Adopt with it if we ever need a relay."
+    },
+    "002b9d14": {
+      "subject": "feat(slack): optional base_url to override the Slack Web API root",
+      "verdict": "feature-off",
+      "why": "Slack's new optional base_url (a non-default Web API root, for GovSlack or a relay). Our Slack platform sets no base_url (~/.cc-connect/config.toml: app_token, bot_token, share_session_in_channel, allow_from), so the SDK's default root is kept and none of the validation or log masking runs; the 'using custom Web API root' line logs only for a custom root. The chain 002b9d14, 09a9b194, d12bd8de, 26d0eaff, 915b855b, beab357e applies cleanly as a test. Adopt with it if we ever need a relay."
+    },
+    "5f16d8b9": {
+      "subject": "test(pi|claudecode): add regression tests for attachment-handling changes",
+      "verdict": "low-value",
+      "why": "Tests for 3f25f4e2's buildClaudeTextPart (and pi). Nothing to test in our fork until 3f25f4e2 is taken."
+    },
+    "73ee5fb9": {
+      "subject": "fix(minimax): keep direct provider pickers on verified models",
+      "verdict": "feature-off",
+      "why": "MiniMax provider pickers kept on verified models (claudecode, codex, opencode, core/minimax_models.go): we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options). A test apply of the MiniMax chain conflicts in agent/claudecode/claudecode.go."
+    },
+    "3f25f4e2": {
+      "subject": "refactor(antigravity|claudecode|gemini|kimi|tmux): unify file-attachment handling",
+      "verdict": "low-value",
+      "why": "We run the path: 26 of the 364 Slack messages of 3-16 Nov carried a file or an image. For Claude Code it only moves Send's text assembly into buildClaudeTextPart and core.AppendFileRefs: the same two fallback sentences and the same '(Files saved locally, please read them: ...)' line, and our paths are already absolute and message-scoped (core.SaveFilesToDisk). No change our agents would see. A test apply (with 5f16d8b9) conflicts in agent/claudecode/session.go and agent/antigravity/session.go."
+    },
+    "915b855b": {
+      "subject": "fix(slack): one display rule for base_url in errors and logs",
+      "verdict": "feature-off",
+      "why": "Slack's new optional base_url (a non-default Web API root, for GovSlack or a relay). Our Slack platform sets no base_url (~/.cc-connect/config.toml: app_token, bot_token, share_session_in_channel, allow_from), so the SDK's default root is kept and none of the validation or log masking runs; the 'using custom Web API root' line logs only for a custom root. The chain 002b9d14, 09a9b194, d12bd8de, 26d0eaff, 915b855b, beab357e applies cleanly as a test. Adopt with it if we ever need a relay."
+    },
+    "4b525079": {
+      "subject": "test(minimax): cover catalog and model handoff boundaries",
+      "verdict": "feature-off",
+      "why": "Tests and a config.example.toml comment for the MiniMax catalog: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "722ea3a5": {
+      "subject": "feat(presets): add Runcrate provider preset",
+      "verdict": "feature-off",
+      "why": "Adds a Runcrate entry to provider-presets.json: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options), and the bridge reads presets from upstream's URL at run time (core/provider_presets.go), not this file. A test apply of the preset commits conflicts in provider-presets.json and its test."
+    },
+    "0dc1ea82": {
+      "subject": "feat(presets): add Opper provider preset",
+      "verdict": "feature-off",
+      "why": "Adds an Opper entry to provider-presets.json: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "26d0eaff": {
+      "subject": "fix(slack): never echo a base_url secret on any validation error",
+      "verdict": "feature-off",
+      "why": "Slack's new optional base_url (a non-default Web API root, for GovSlack or a relay). Our Slack platform sets no base_url (~/.cc-connect/config.toml: app_token, bot_token, share_session_in_channel, allow_from), so the SDK's default root is kept and none of the validation or log masking runs; the 'using custom Web API root' line logs only for a custom root. The chain 002b9d14, 09a9b194, d12bd8de, 26d0eaff, 915b855b, beab357e applies cleanly as a test. Adopt with it if we ever need a relay."
+    },
+    "89cbf74a": {
+      "subject": "fix(claudecode): preserve structured tool input for cards",
+      "verdict": "feature-off",
+      "why": "summarizeInput keeps a tool's whole input as JSON for tool cards. Its output feeds tool-use events and permission requests only: our tool messages are off ([display] tool_messages = false), we run bypassPermissions, and Slack gets no tool cards. A test apply conflicts in agent/claudecode/claudecode.go."
+    },
+    "beab357e": {
+      "subject": "fix(slack): mask only the authority, leave the path to safePath; reject a bare \"?\"",
+      "verdict": "feature-off",
+      "why": "Slack's new optional base_url (a non-default Web API root, for GovSlack or a relay). Our Slack platform sets no base_url (~/.cc-connect/config.toml: app_token, bot_token, share_session_in_channel, allow_from), so the SDK's default root is kept and none of the validation or log masking runs; the 'using custom Web API root' line logs only for a custom root. The chain 002b9d14, 09a9b194, d12bd8de, 26d0eaff, 915b855b, beab357e applies cleanly as a test. Adopt with it if we ever need a relay."
+    },
+    "09a9b194": {
+      "subject": "fix(slack): don't echo credentials when base_url fails to parse",
+      "verdict": "feature-off",
+      "why": "Slack's new optional base_url (a non-default Web API root, for GovSlack or a relay). Our Slack platform sets no base_url (~/.cc-connect/config.toml: app_token, bot_token, share_session_in_channel, allow_from), so the SDK's default root is kept and none of the validation or log masking runs; the 'using custom Web API root' line logs only for a custom root. The chain 002b9d14, 09a9b194, d12bd8de, 26d0eaff, 915b855b, beab357e applies cleanly as a test. Adopt with it if we ever need a relay."
+    },
+    "60eb94ee": {
+      "subject": "chore(minimax): preserve unrelated upstream formatting",
+      "verdict": "feature-off",
+      "why": "Formatting in agent/claudecode/claudecode.go after 73ee5fb9's MiniMax change; nothing without it."
+    },
+    "79996d08": {
+      "subject": "test: fix two flaky tests that keep main red",
+      "verdict": "watch",
+      "why": "Test only. Its core half reads CronJob.LastRun under the store's lock in TestCmdCronExec_TriggersJob, a race seen only under -race, which our builds do not run (go test -p 1 ./core/); its Feishu half we do not run. The same test as bbea7b0b (watch): adopt both if it fails in one of our builds. A test apply conflicts in core/engine_test.go."
+    },
+    "c4c7f475": {
+      "subject": "fix(presets): drop the Opper codex block for now",
+      "verdict": "feature-off",
+      "why": "Drops 0dc1ea82's Opper Codex block: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "6e176e7c": {
+      "subject": "test(minimax): check mock session cleanup errors",
+      "verdict": "feature-off",
+      "why": "A MiniMax test's cleanup check: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "3d34d013": {
+      "subject": "fix(feishu): size Markdown table columns by content in reply cards",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "5671c725": {
+      "subject": "feat(codex): support named app-server permission profiles",
+      "verdict": "not-used",
+      "why": "Codex app-server permission profiles (agent/codex; its config.example.toml lines are Codex's); we run Claude Code only."
+    },
+    "243ad9d4": {
+      "subject": "feat(wecom): add interactive card sending and callback feedback (template_card & template_card_event)",
+      "verdict": "not-used",
+      "why": "WeCom interactive cards (platform/wecom), which we do not run (Slack + Claude Code only)."
+    },
+    "9654ca3b": {
+      "subject": "feat(feishu): scope group reply-all to configured chats",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only). Its config.example.toml lines are Feishu's options."
+    },
+    "ff7db9c7": {
+      "subject": "feat(feishu): optionally coalesce plain text and image bursts",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only). Its config.example.toml lines are Feishu's options."
+    },
+    "099cdaca": {
+      "subject": "test(feishu): consolidate streaming tests in feishu_test.go",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "43c6d40f": {
+      "subject": "feat(cursor): fall back to local chat history",
+      "verdict": "not-used",
+      "why": "Cursor agent (agent/cursor), which we do not run (Slack + Claude Code only)."
+    },
+    "f2e7ed5d": {
+      "subject": "feat(feishu): make streaming card typewriter settings configurable",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only). Its config.example.toml lines are Feishu's options."
+    },
+    "83254ad8": {
+      "subject": "fix(feishu): track connection lifecycle across shared platforms",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "a0c42989": {
+      "subject": "fix(feishu): download forwarded files through the outer message",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "b8ece285": {
+      "subject": "fix(wecom): name quoted files and mark unavailable attachments",
+      "verdict": "not-used",
+      "why": "WeCom quoted files (platform/wecom), which we do not run (Slack + Claude Code only)."
+    },
+    "88a79216": {
+      "subject": "feat(cursor): reload an optional instructions file on every turn",
+      "verdict": "not-used",
+      "why": "Cursor agent's instructions file (agent/cursor; its config.example.toml lines are Cursor's); we run Claude Code only."
+    },
+    "b9f8091a": {
+      "subject": "fix(feishu): pick one locale for post text and files, sniff MIME on quoted and forwarded files",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "fcf9de98": {
+      "subject": "fix(feishu): use outer message for forwarded images",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "8be62edf": {
+      "subject": "fix(feishu): preserve links in quoted interactive cards",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "187b67ea": {
+      "subject": "feat: skip Feishu messages mentioning others",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only). Its config.example.toml lines are Feishu's options."
+    },
+    "4aa728f9": {
+      "subject": "docs(weixin): clarify personal WeChat group chat is not feasible",
+      "verdict": "not-used",
+      "why": "Docs for personal WeChat, which we do not run."
+    },
+    "22195ec3": {
+      "subject": "fix(feishu): correct receive_id type when replying to bot menu events",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "9bed63f3": {
+      "subject": "fix(feishu): cap long commands and patches in tool card details",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "41fc04d1": {
+      "subject": "feat(telegram): forward dice messages to the agent as text",
+      "verdict": "not-used",
+      "why": "Telegram dice messages (platform/telegram), which we do not run (Slack + Claude Code only)."
+    },
+    "536440cd": {
+      "subject": "fix(feishu): check chat scope before allow_from in onMessage",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "1b18c460": {
+      "subject": "test(feishu): assert the CreateMessage receive_id_type for bot menu replies",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "a88b850f": {
+      "subject": "fix(pi): stop inlining file bytes in RPC prompt",
+      "verdict": "not-used",
+      "why": "Pi agent prompt (agent/pi), which we do not run (Slack + Claude Code only)."
+    },
+    "08ebe770": {
+      "subject": "feat(feishu): show key tool parameters in cards",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "e1cac31f": {
+      "subject": "fix(discord): forward AskUserQuestion option clicks to the engine",
+      "verdict": "not-used",
+      "why": "Discord AskUserQuestion clicks (platform/discord), which we do not run (Slack + Claude Code only)."
+    },
+    "5d301fd9": {
+      "subject": "fix(feishu): address #1944 review — decode wrapped tool input, ASCII cap note, query redaction test",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "3199e903": {
+      "subject": "feat(cursor): persist /memory in project AGENTS.md",
+      "verdict": "not-used",
+      "why": "Cursor agent's /memory (agent/cursor; config.example.toml and docs lines are Cursor's); we run Claude Code only."
+    },
+    "eb0ef01e": {
+      "subject": "fix(feishu): harden table layout fallbacks",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "0646385f": {
+      "subject": "fix(feishu): avoid double-wrapped links and honor multi_url",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "86fef0c4": {
+      "subject": "docs: document the codex_home option for isolated Codex homes",
+      "verdict": "not-used",
+      "why": "Docs for Codex's codex_home option; we run Claude Code only."
+    },
+    "88e21176": {
+      "subject": "fix(feishu): retain fallback card labels and escape links",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "50a23a2c": {
+      "subject": "refactor(feishu): drop unused parsePostContent/parsePostFiles wrappers",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "4218e695": {
+      "subject": "feat(minimax): upgrade default model to MiniMax-M3",
+      "verdict": "feature-off",
+      "why": "MiniMax preset's default model: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "d0e32174": {
+      "subject": "fix(opencode): preserve structured tool input for cards",
+      "verdict": "not-used",
+      "why": "OpenCode tool input for cards (agent/opencode), which we do not run (Slack + Claude Code only)."
+    },
+    "bcab89c0": {
+      "subject": "fix(feishu): fill available width for Markdown cards",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "6110adaf": {
+      "subject": "docs(feishu): clarify streaming typewriter configuration",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only). Its config.example.toml lines are Feishu's options."
+    },
+    "017006aa": {
+      "subject": "feat(minimax): make M3.1 Flash the default",
+      "verdict": "feature-off",
+      "why": "MiniMax preset's default model: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "8e27e708": {
+      "subject": "fix(feishu): parse markdown-wrapped tool input",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "f651522f": {
+      "subject": "fix(feishu): deterministic locale in post summary, guard short WebP check",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "0ec58e24": {
+      "subject": "test(feishu): check coalescer shutdown errors",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "a7111491": {
+      "subject": "fix(feishu): sniff MIME type for standalone file messages",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "af1e3fe7": {
+      "subject": "docs: sync Russian codex_home documentation",
+      "verdict": "not-used",
+      "why": "Russian docs for Codex's codex_home option; we run Claude Code only."
+    },
+    "1899cf9c": {
+      "subject": "docs(feishu): move streaming configuration usage to PR description",
+      "verdict": "not-used",
+      "why": "Feishu streaming docs; we do not run Feishu."
+    },
+    "cb5e3c3d": {
+      "subject": "style(cursor): match memory provider to other agents",
+      "verdict": "not-used",
+      "why": "Style in agent/cursor, which we do not run (Slack + Claude Code only)."
+    },
+    "fb995b51": {
+      "subject": "fix(minimax): keep ordinary catalog on verified models",
+      "verdict": "feature-off",
+      "why": "MiniMax catalog in provider-presets.json: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "0d4c7a1b": {
+      "subject": "test(feishu): keep typewriter panel checks independent of layout",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "19b472ef": {
+      "subject": "fix(feishu): preserve quoted card URL bytes for agent prompts",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "a28ca6cf": {
+      "subject": "feat(feishu): show patch text in edit cards",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "7afc00f3": {
+      "subject": "docs(slack): say that session_scope=thread keeps top-level DMs in one session",
+      "verdict": "low-value",
+      "why": "A config.example.toml comment on Slack's session_scope=thread; no code, and we set no session_scope (share_session_in_channel = true)."
+    },
+    "2a6877b6": {
+      "subject": "test(feishu): check webhook server cleanup",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "55d9cb01": {
+      "subject": "fix(feishu): read a/link labels from property.text",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "3e8caaaa": {
+      "subject": "test(feishu): expect collapsed tools during typewriter updates",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "9b24dcf4": {
+      "subject": "test(feishu): tighten tool pipeline regression scope",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "4d569651": {
+      "subject": "fix(feishu): satisfy forwarded file formatting lint",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "0590a6d9": {
+      "subject": "test(feishu): document wrapped input regression",
+      "verdict": "not-used",
+      "why": "Feishu only (platform/feishu), which we do not run (Slack + Claude Code only)."
+    },
+    "b2bf8f3e": {
+      "subject": "fix(wecom): ignore Close error in sendCardInternal for errcheck linter",
+      "verdict": "not-used",
+      "why": "Lint in platform/wecom, which we do not run (Slack + Claude Code only)."
+    },
+    "d613f047": {
+      "subject": "docs: correct MiniMax context window (M3=512K, M2.7=192K; was mistakenly 1M)",
+      "verdict": "feature-off",
+      "why": "MiniMax context window in config.example.toml docs: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "23b87790": {
+      "subject": "docs: note the feishu bot menu receive_id fix in the changelog",
+      "verdict": "not-used",
+      "why": "Changelog line for Feishu's bot-menu fix; we do not run Feishu."
+    },
+    "63b44df0": {
+      "subject": "docs(opencode): clarify structured tool input cap",
+      "verdict": "not-used",
+      "why": "OpenCode docs comment (agent/opencode), which we do not run (Slack + Claude Code only)."
     }
   },
   "ours": {
