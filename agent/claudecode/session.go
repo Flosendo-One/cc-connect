@@ -1,7 +1,6 @@
 package claudecode
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -48,6 +47,7 @@ type claudeSession struct {
 	done            chan struct{}
 	alive           atomic.Bool
 	flosendoExit    flosendoExit // EDEN-1852 S2: what the exit line says (flosendo_agent_exit.go)
+	flosendoDeaf    atomic.Bool  // EDEN-1943: the reader ended while the CLI ran and the channel was told (flosendo_read_line.go)
 
 	// activeModel stores the model id reported by the CLI's init event (e.g.
 	// "claude-opus-4-7[1m]"). It may be empty if the init event hasn't
@@ -512,13 +512,12 @@ func (cs *claudeSession) readLoop(stdout io.ReadCloser, stderrBuf *bytes.Buffer)
 	waitErrCh, waitDone := cs.startReadLoopWait(stdout)
 	defer cs.finishReadLoop(waitErrCh, stderrBuf)
 
-	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
-	for scanner.Scan() {
-		cs.handleReadLoopLine(scanner.Text())
-	}
+	// EDEN-1943: a line of any size up to flosendoLineCap is read; a longer one is skipped visibly, not the end of the
+	// loop (flosendo_read_line.go).
+	err := flosendoReadLines(flosendoWrapStdout(stdout), func(line []byte) { cs.handleReadLoopLine(string(line)) },
+		cs.flosendoSkippedLine)
 
-	cs.handleReadLoopScanErr(scanner.Err(), waitDone)
+	cs.handleReadLoopScanErr(err, waitDone)
 }
 
 func (cs *claudeSession) startReadLoopWait(stdout io.ReadCloser) (<-chan error, <-chan struct{}) {
@@ -568,7 +567,11 @@ func (cs *claudeSession) finishReadLoop(waitErrCh <-chan error, stderrBuf *bytes
 			slog.Error("claudeSession: process failed", "error", err, "stderr", stderrMsg, "kind", kind)
 			// emitEvent handles channel routing + inTurn lifecycle; nothing
 			// more to do for the in-flight turn (if any) here.
-			cs.emitEvent(core.Event{Type: core.EventError, Error: fmt.Errorf("%s", stderrMsg), ErrorKind: kind})
+			// EDEN-1943: not when the reader's end already told the channel and ended the waiting turn: the
+			// stopped process's stderr would be a third post.
+			if !cs.flosendoDeaf.Load() {
+				cs.emitEvent(core.Event{Type: core.EventError, Error: fmt.Errorf("%s", stderrMsg), ErrorKind: kind})
+			}
 		}
 	}
 	// INVARIANT: readLoop must close cs.events, cs.orphanEvents, and cs.done
@@ -584,24 +587,29 @@ func (cs *claudeSession) finishReadLoop(waitErrCh <-chan error, stderrBuf *bytes
 	close(cs.done)
 }
 
+// handleReadLoopScanErr runs when the reader has ended. EDEN-1943: if the CLI still runs, the bridge would never read
+// it again, so the session is closed (flosendoReaderEnded), whatever ended the reader: a read error, or an EOF. Only a
+// CLI still running after flosendoReaderEndGrace counts: an EOF can come up to WaitDelay before Wait returns, and a read
+// error just before (Wait closes the pipe when a child of the CLI still holds it). Not when the bridge is stopping or
+// closing it.
 func (cs *claudeSession) handleReadLoopScanErr(err error, waitDone <-chan struct{}) {
-	if err == nil {
+	if cs.flosendoExit.requested.Load() || cs.flosendoStopped() {
 		return
 	}
-
 	select {
 	case <-cs.ctx.Done():
 		return
 	case <-waitDone:
 		return
-	default:
+	case <-time.After(flosendoReaderEndGrace):
 	}
-
-	slog.Error("claudeSession: scanner error", "error", err)
-	// emitEvent routes the EventError to whichever channel the in-flight
-	// turn was on (snapshotted at first event); for an active turn it also
-	// clears cs.inTurn so the next turn re-snapshots fresh.
-	cs.emitEvent(core.Event{Type: core.EventError, Error: fmt.Errorf("read stdout: %w", err)})
+	if cs.flosendoExit.requested.Load() || cs.flosendoStopped() {
+		return
+	}
+	if err != nil {
+		slog.Error("claudeSession: scanner error", "error", err)
+	}
+	cs.flosendoReaderEnded(err)
 }
 
 func (cs *claudeSession) handleReadLoopLine(line string) {

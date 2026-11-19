@@ -90,6 +90,9 @@ func (e *Engine) orphanLoop(state *interactiveState, ch <-chan Event) {
 				e.flushOrphanTurnNow(state, turn)
 			}
 			turn = newOrphanTurn()
+		case EventFlosendoNotice:
+			// EDEN-1943: the agent's notice, posted at once where the session lives (flosendo_wakeup_target.go).
+			e.flosendoPostNotice(state, evt.Content)
 		}
 	}
 	// Channel closed (session ended). Flush any pending turn so partial
@@ -175,10 +178,11 @@ func (e *Engine) flushOrphanTurnWith(state *interactiveState, turn *orphanTurn, 
 		return
 	}
 
-	// Reconstruct replyCtx if the state cached one is stale or missing —
-	// the session may not have had a real user turn since startup.
-	if replyCtx == nil {
-		rc, err := reconstructOrphanReplyCtx(platform, sessionKey)
+	// EDEN-1943 (C-2): a whole wakeup turn posts where the session lives, rebuilt from the session key, not with the
+	// last Slack turn's context (a thread, once Ivan answered in one); the cached one only when it cannot be rebuilt.
+	// The part of a turn before our message was taken in (waitLock false) is that message's: it keeps the cached one.
+	if waitLock || replyCtx == nil {
+		rc, err := flosendoOrphanReplyCtx(platform, sessionKey, replyCtx)
 		if err != nil {
 			slog.Warn("orphan: reconstruct replyCtx failed", "session_key", sessionKey, "error", err)
 			return

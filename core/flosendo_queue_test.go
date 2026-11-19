@@ -146,6 +146,59 @@ func TestFlosendoQueue_IdleKillReplaysQueueAndAlerts(t *testing.T) {
 	}
 }
 
+// The idle-kill replay's fallback: the dead turn never lets go of the session within replayWaitLimit, so the queued
+// message is really dropped; it gets the "Not processed" notice, and no fresh session starts. EDEN-1943 item 7: stream
+// A's QA probe of EDEN-1618 (15 Nov, evidence 36feef86), adopted, because a plant that drops this notice stayed green
+// on the tests above.
+func TestFlosendoQueue_IdleKillReplayFallbackNamesTheDroppedMessage(t *testing.T) {
+	p := &stubCronReplyTargetPlatform{stubPlatformEngine: stubPlatformEngine{n: "test"}}
+	dead := newControllableSession("dead")
+	fresh := newQueuingSession("fresh")
+	var starts atomic.Int32
+	agent := &controllableAgent{startSessionFn: func(_ context.Context, _ string) (AgentSession, error) {
+		starts.Add(1)
+		return fresh, nil
+	}}
+	e := NewEngine("test", agent, []Platform{p}, "", LangEnglish)
+	e.SetEventIdleTimeout(100 * time.Millisecond)
+	e.SetAlertSessionKey("test:alerts")
+	oldWait, oldPoll := replayWaitLimit, replayPollInterval
+	replayWaitLimit, replayPollInterval = 300*time.Millisecond, 20*time.Millisecond
+	t.Cleanup(func() { replayWaitLimit, replayPollInterval = oldWait, oldPoll })
+
+	key := "test:channel"
+	state := &interactiveState{agentSession: dead, platform: p, replyCtx: "ctx", pendingMessages: []queuedMessage{
+		queuedItem(p, key, "m1", "sign 1\nsecond line"),
+	}}
+	e.interactiveMu.Lock()
+	e.interactiveStates[key] = state
+	e.interactiveMu.Unlock()
+	session := e.sessions.GetOrCreateActive(key)
+	session.TryLock() // never unlocked: the dead turn keeps the session busy
+
+	done := make(chan struct{})
+	go func() {
+		e.processInteractiveEvents(state, session, e.sessions, key, "", time.Now(), nil, nil, nil, telemetryMsgCtx{})
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("the idle kill did not end the turn")
+	}
+	want := "Not processed (the session timed out and stayed busy): “sign 1”"
+	deadline := time.Now().Add(3 * time.Second)
+	for !strings.Contains(strings.Join(p.getSent(), "\n"), want) {
+		if time.Now().After(deadline) {
+			t.Fatalf("the really dropped message got no notice; sent: %q", p.getSent())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if starts.Load() != 0 {
+		t.Fatal("a fresh session started although the dead turn still held the session")
+	}
+}
+
 // Restart: queues are written to disk at Stop; after the restart each sender is told, in the message's thread.
 func TestFlosendoQueue_RestartSavesQueueAndTellsSenders(t *testing.T) {
 	dir := t.TempDir()

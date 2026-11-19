@@ -1,0 +1,20 @@
+# EDEN-1943 item 6: derived from testdata/eden1137/s5_midturn_self_tool.jsonl (D0, real claude 2.1.286), by hand. The second turn is started by a peer's message (another agent's SendMessage), not a background task: the bridge log of 17 Nov 11:11:40Z-11:12:05.602Z (types only; DEBUG lines carry nothing else) shows that turn as system, assistant and user lines with no command_lifecycle of its own, then ours (queued, then started at a tool call), then "a message was taken into a self-fired turn". So: s5's task lines and the result's origin are dropped, the first turn has no tool, and the rest is s5's.
+{"t": 0.003, "dir": "in", "n": 1}
+{"t": 2.206, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1943-peer", "state": "queued", "command_uuid": "$IN1"}}
+{"t": 2.241, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1943-peer", "state": "started", "command_uuid": "$IN1"}}
+{"t": 2.825, "dir": "out", "line": {"type": "system", "session_id": "s1943-peer", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 6.418, "dir": "out", "line": {"type": "assistant", "session_id": "s1943-peer", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 6.431, "dir": "out", "line": {"type": "assistant", "session_id": "s1943-peer", "message": {"role": "assistant", "content": [{"type": "text", "text": "STARTED"}]}}}
+{"t": 6.557, "dir": "out", "line": {"type": "result", "session_id": "s1943-peer", "subtype": "success", "is_error": false, "num_turns": 1, "result": "STARTED", "usage": {"input_tokens": 18, "output_tokens": 238, "cache_creation_input_tokens": 7108, "cache_read_input_tokens": 45028}}}
+{"t": 6.56, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1943-peer", "state": "completed", "command_uuid": "$IN1"}}
+{"t": 11.648, "dir": "out", "line": {"type": "system", "session_id": "s1943-peer", "subtype": "init", "model": "claude-haiku-4-5-20251001", "capabilities": ["msg_lifecycle_v1"]}}
+{"t": 12.739, "dir": "out", "line": {"type": "assistant", "session_id": "s1943-peer", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 12.983, "dir": "out", "line": {"type": "assistant", "session_id": "s1943-peer", "message": {"role": "assistant", "content": [{"type": "tool_use", "name": "Bash", "id": "toolu_1943", "input": {"command": "sleep 8"}}]}}}
+{"t": 14.132, "dir": "in", "n": 2}
+{"t": 14.135, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1943-peer", "state": "queued", "command_uuid": "$IN2"}}
+{"t": 21.201, "dir": "out", "line": {"type": "user", "session_id": "s1943-peer", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_1943", "content": "(tool output)"}]}}}
+{"t": 21.418, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1943-peer", "state": "started", "command_uuid": "$IN2"}}
+{"t": 22.254, "dir": "out", "line": {"type": "assistant", "session_id": "s1943-peer", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "(thinking)"}]}}}
+{"t": 22.295, "dir": "out", "line": {"type": "assistant", "session_id": "s1943-peer", "message": {"role": "assistant", "content": [{"type": "text", "text": "HANDLED\n\nTHIRD"}]}}}
+{"t": 22.385, "dir": "out", "line": {"type": "command_lifecycle", "session_id": "s1943-peer", "state": "completed", "command_uuid": "$IN2"}}
+{"t": 22.388, "dir": "out", "line": {"type": "result", "session_id": "s1943-peer", "subtype": "success", "is_error": false, "num_turns": 2, "result": "HANDLED\n\nTHIRD", "usage": {"input_tokens": 18, "output_tokens": 148, "cache_creation_input_tokens": 7108, "cache_read_input_tokens": 45028}}}
