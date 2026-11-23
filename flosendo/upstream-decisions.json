@@ -1,6 +1,6 @@
 {
   "about": "Flosendo decisions on upstream chenhg5/cc-connect commits (EDEN-1313 fork). Scored 9 Oct 2026 by Fati at Ivan's request (\"only if it makes sense, and added value by scoring and looking at the cons and pros and consequences\"). Verdicts: adopt | watch | declined | feature-off | have-equivalent | not-used | low-value. flosendo/upstream_report.py lists upstream commits not yet here.",
-  "decided_at": "2026-11-16",
+  "decided_at": "2026-11-23",
   "commits": {
     "961655de": {
       "subject": "fix(core): count queued user messages toward reset_on_idle_mins",
@@ -1441,6 +1441,261 @@
       "subject": "docs(opencode): clarify structured tool input cap",
       "verdict": "not-used",
       "why": "OpenCode docs comment (agent/opencode), which we do not run (Slack + Claude Code only)."
+    },
+    "bee6b1b2": {
+      "subject": "fix(claudecode): implement graceful CancelTurn via control_request interrupt",
+      "verdict": "low-value",
+      "why": "/stop sends the CLI a control_request interrupt and keeps its process alive instead of closing it, and fires a new turn.cancelled hook event. We almost never type /stop (audit log 13-23 Nov: /new 254, /config 1, nothing else; 2 from 30 Sep, 1 from 22 Oct to 2 Nov), the next message after our /stop starts the agent again, and we configure no hooks. Base of a six-commit chain (dc7a3ced, 31de5829, 888f6648, 04d6aac1, eabaacef) that rewrites the turn and close paths in agent/claudecode/session.go and the stop path in core/engine.go, where EDEN-1137, 1852 and 1943 live (1852 marks requested=true at the top of Close(), which this path would stop calling). A test apply conflicts in core/engine.go. Take the chain whole or not at all, and only if /stop becomes something we use."
+    },
+    "dc7a3ced": {
+      "subject": "fix(claudecode): confirm the interrupt actually stopped the turn",
+      "verdict": "low-value",
+      "why": "Waits for the interrupt's result before reporting /stop done, with Close() as the fallback; upstream measured only about half of its interrupts taking effect (9 on 1 Oct). Only means something with bee6b1b2 (low-value): our /stop closes the process, which always stops the turn. +448 lines; a test apply conflicts in session.go and engine.go."
+    },
+    "31de5829": {
+      "subject": "feat(config): make the /stop hook event configurable (default session.ended)",
+      "verdict": "low-value",
+      "why": "A stop_hook_event config key choosing between session.ended and bee6b1b2's turn.cancelled for /stop: we configure no hooks and have not taken bee6b1b2. A test apply conflicts in config/config.go, core/engine.go and core/engine_test.go; also touches cmd/cc-connect/main.go."
+    },
+    "888f6648": {
+      "subject": "fix(core): close the two concurrency gaps found in the #1765 review",
+      "verdict": "low-value",
+      "why": "Two concurrency gaps in bee6b1b2 and dc7a3ced's cancel path (a /new replacing the state during the blocking CancelTurn; cancel-waiter ownership) and a turnActive reset when the read loop ends: code we do not have (bee6b1b2, low-value). Conflicts in session.go."
+    },
+    "04d6aac1": {
+      "subject": "fix(claudecode): wake every cancel waiter when the turn terminates",
+      "verdict": "low-value",
+      "why": "Wakes every cancel waiter when the turn ends: dc7a3ced's waiter, which we do not have (low-value). Conflicts in session.go."
+    },
+    "eabaacef": {
+      "subject": "fix(claudecode): make the cancel-wait registration atomic with turn state",
+      "verdict": "low-value",
+      "why": "Makes dc7a3ced's cancel-wait registration atomic with the turn state: code we do not have (low-value). Conflicts in session.go."
+    },
+    "e2025ac1": {
+      "subject": "fix(core): defer /model session restart until the running turn completes",
+      "verdict": "low-value",
+      "why": "/model typed during a turn now waits for the turn to end before restarting the session, instead of closing it mid-turn. Nobody types /model (audit log 13-23 Nov: /new 254, /config 1, nothing else; none 30 Oct-9 Nov, 962a9e79): the model is pinned in config.toml (claude-opus-5-5). It hooks into drainPendingMessages, EDEN-1618's queue path; a test apply conflicts in core/engine.go."
+    },
+    "895baeab": {
+      "subject": "fix(cron): stop waiting on a running job at shutdown",
+      "verdict": "not-used",
+      "why": "Shutdown stops waiting for a running cron job. The bug is in upstream's own scheduler run loop (757b4df0, low-value, not taken); ours is robfig/cron v3, whose Stop() (core/cron.go:477, cs.cron.Stop()) returns without waiting for running jobs. In the journal the bridge stopped in 3 s (14 Nov 07:03) and 2 s (19 Nov 09:45). A test apply conflicts in core/cron.go."
+    },
+    "a3f63e53": {
+      "subject": "fix(claudecode): report \"Failed to load usage data\" from the /usage probe",
+      "verdict": "low-value",
+      "why": "/usage says \"Failed to load usage data\" at once instead of after the probe's timeout. Nobody ran /usage (audit log 13-23 Nov: /new 254, /config 1, nothing else), as with 4e6ae098 and 3d186ab6. Applies cleanly (+4 lines in claude_usage.go, which EDEN-1789 touches); take it with the next /usage work."
+    },
+    "c4b07f45": {
+      "subject": "fix(core): run timer exec jobs through the configured shell",
+      "verdict": "low-value",
+      "why": "Timer exec jobs run through the configured shell, flag and profile instead of a hardcoded sh -c. We configure no shell, so config.EffectiveShell gives sh, -c and no profile: the same command as today. Applies cleanly."
+    },
+    "f097f4d2": {
+      "subject": "fix(doctor): check the configured data_dir instead of ~/.cc-connect",
+      "verdict": "feature-off",
+      "why": "/doctor checks the configured data_dir instead of ~/.cc-connect: ours is unset (data_dir = \"\"), so it checks ~/.cc-connect as today; nobody ran /doctor (audit log 13-23 Nov: /new 254, /config 1, nothing else)."
+    },
+    "227d03df": {
+      "subject": "fix(config): drop agent work_dir when the dashboard enables multi-workspace mode",
+      "verdict": "feature-off",
+      "why": "The dashboard's multi-workspace save drops the agent work_dir: we run no dashboard, and multi-workspace mode is off (4de2b801)."
+    },
+    "021b0bbe": {
+      "subject": "fix: preserve UTF-8 in string truncation",
+      "verdict": "low-value",
+      "why": "Truncates by character instead of byte. The Slack half is only the debug log line \"slack: rich content received\" (richContentLogLimit): we log at debug, and a cut inside a multibyte character leaves one unreadable byte at the end of a log line; nothing sent to Slack changes. The weixin and wecom halves are platforms we do not run. A test apply conflicts in platform/slack/rich_content.go."
+    },
+    "18304fe4": {
+      "subject": "fix(feishu): leave an AskUserQuestion card alone on a stale click",
+      "verdict": "not-used",
+      "why": "A stale click on an answered AskUserQuestion card leaves the card alone: the core half (core.AskQuestionStateAware) is an interface only Feishu implements; our Slack has no question cards (0a4b4617, feature-off) and bypass mode keeps questions non-interactive (48f8a399, declined)."
+    },
+    "9570b3a0": {
+      "subject": "fix(feishu): don't echo the card answer as a second chat message",
+      "verdict": "not-used",
+      "why": "The engine skips the \"question: answer\" echo when the platform rendered the answer in its card (Message.CardAnswerRendered, set only by Feishu); our Slack has no question cards (0a4b4617, feature-off) and bypass mode keeps questions non-interactive (48f8a399, declined)."
+    },
+    "800f9d52": {
+      "subject": "fix(core): also suppress the answer echo on the sync ask-question path",
+      "verdict": "not-used",
+      "why": "The same echo suppression on the synchronous ask-question path, keyed on CardAnswerRendered, which only Feishu sets (9570b3a0, not-used)."
+    },
+    "433400c7": {
+      "subject": "fix(feishu): localize the requester-only card toast",
+      "verdict": "not-used",
+      "why": "Localises Feishu's requester-only card toast through core.LocalizerAware, which only Feishu implements."
+    },
+    "59653b74": {
+      "subject": "fix(daemon): let launchd own the restart transaction",
+      "verdict": "not-used",
+      "why": "`cc-connect daemon restart` lets launchd restart in place: macOS; we run under systemd and never use the daemon subcommands (987f454f)."
+    },
+    "5dd68fee": {
+      "subject": "fix(core): escape HTML tags written inside inline code",
+      "verdict": "not-used",
+      "why": "Escapes HTML tags written inside inline code in MarkdownToSimpleHTML, which only platform/telegram calls."
+    },
+    "90373cca": {
+      "subject": "feat: add UberLLM provider preset",
+      "verdict": "feature-off",
+      "why": "Adds an UberLLM preset to provider-presets.json (with its test): we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "7d0e925a": {
+      "subject": "feat(presets): add Lazu provider preset",
+      "verdict": "feature-off",
+      "why": "Adds a Lazu preset to provider-presets.json (with its test): we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "0ae0dc24": {
+      "subject": "feat(presets): add WorldRouter provider preset",
+      "verdict": "feature-off",
+      "why": "Adds a WorldRouter preset to provider-presets.json (with its test): we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "18ba46ea": {
+      "subject": "feat(presets): add AIGROW provider preset",
+      "verdict": "feature-off",
+      "why": "Adds an AIGROW preset to provider-presets.json (with its test): we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "7e366636": {
+      "subject": "feat(presets): add TrustedRouter provider preset",
+      "verdict": "feature-off",
+      "why": "Adds a TrustedRouter preset to provider-presets.json (with its test): we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "b84302dc": {
+      "subject": "feat(presets): add Requesty provider preset",
+      "verdict": "feature-off",
+      "why": "Adds a Requesty preset to provider-presets.json: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "5ea2e914": {
+      "subject": "test(presets): cover Requesty preset",
+      "verdict": "feature-off",
+      "why": "Test for b84302dc's Requesty preset: we configure no providers (no [[projects.agent.providers]] in ~/.cc-connect/config.toml; the model is pinned in the agent options)."
+    },
+    "c419df86": {
+      "subject": "ci: run on pushes to release/** branches",
+      "verdict": "low-value",
+      "why": "Upstream CI also runs on pushes to release/** branches: CI configuration only."
+    },
+    "4fdb2232": {
+      "subject": "chore: note rebase validation on upstream main",
+      "verdict": "low-value",
+      "why": "A one-line change to upstream's .github/workflows/ci.yml (a note on rebase validation): CI configuration only."
+    },
+    "2b754750": {
+      "subject": "feat(feishu): attachment_wait = \"mention\" holds topic attachments until the sender's next @bot",
+      "verdict": "not-used",
+      "why": "Feishu attachment_wait = \"mention\": a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "001ddeed": {
+      "subject": "fix(codex): discover models from the configured native CLI",
+      "verdict": "not-used",
+      "why": "Codex model discovery from the native CLI: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "ea8874c4": {
+      "subject": "feat(codex): make app-server AskUserQuestion timeout configurable",
+      "verdict": "not-used",
+      "why": "Codex app-server AskUserQuestion timeout: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "7f59f7e9": {
+      "subject": "feat(dingtalk): 群回复可选 text+atUserIds（@ 可点）——at_mention_groups 开关（默认关）",
+      "verdict": "not-used",
+      "why": "DingTalk group replies with clickable @ mentions: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "048e2dfd": {
+      "subject": "fix(feishu): gate askq/perm card clicks to the requester",
+      "verdict": "not-used",
+      "why": "Feishu question and permission card clicks gated to the requester: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "5cd74bf3": {
+      "subject": "feat(acp): expose thought_level as reasoning effort",
+      "verdict": "not-used",
+      "why": "ACP thought_level as reasoning effort: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "c78b80dd": {
+      "subject": "fix(qq): add opt-in send_via_http to send text replies over the OneBot HTTP API",
+      "verdict": "not-used",
+      "why": "QQ replies over the OneBot HTTP API: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "5078ccf3": {
+      "subject": "fix(codex): steer active app-server turns",
+      "verdict": "not-used",
+      "why": "Codex app-server turn steering: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "01744213": {
+      "subject": "fix(feishu): restart WebSocket after SDK reconnect exhaustion",
+      "verdict": "not-used",
+      "why": "Feishu WebSocket restart after reconnect exhaustion: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "9e58b9e9": {
+      "subject": "fix(antigravity): report empty headless runs and process failures",
+      "verdict": "not-used",
+      "why": "Antigravity empty headless runs and process failures: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "5f78c54a": {
+      "subject": "fix(pi): keep the reasoning suffix of a model reference",
+      "verdict": "not-used",
+      "why": "Pi model references keep their reasoning suffix: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "241b4a18": {
+      "subject": "fix(feishu): dispatch interactive group cards that mention the bot",
+      "verdict": "not-used",
+      "why": "Feishu interactive group cards that mention the bot: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "0cb00c2f": {
+      "subject": "fix(codex): recover from stale steering turn IDs",
+      "verdict": "not-used",
+      "why": "Codex recovery from stale steering turn IDs: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "7e4aa87b": {
+      "subject": "fix(opencode): keep the wildcard permission next to skill rules",
+      "verdict": "not-used",
+      "why": "OpenCode wildcard permission next to skill rules: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "d64d009b": {
+      "subject": "fix(feishu): never coalesce card control callbacks",
+      "verdict": "not-used",
+      "why": "Feishu card control callbacks never coalesced: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "984d631e": {
+      "subject": "fix(max): cache only private-dialog chats for callback routing",
+      "verdict": "not-used",
+      "why": "Max callback routing caches private dialogs only: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "1520e9d2": {
+      "subject": "fix(wecom): send the required task_id on button_interaction cards",
+      "verdict": "not-used",
+      "why": "WeCom button_interaction cards send task_id: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "4df48e7e": {
+      "subject": "fix(dingtalk): address review feedback - hermetic webhook fakes and exact-nick mention strip (#1973)",
+      "verdict": "not-used",
+      "why": "DingTalk test fakes and mention matching: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "ad87824e": {
+      "subject": "fix(kimi): stop passing --quiet alongside stream-json output",
+      "verdict": "not-used",
+      "why": "Kimi stops passing --quiet with stream-json: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "0b3642b1": {
+      "subject": "docs(dingtalk): clarify group at-mention helper contracts",
+      "verdict": "not-used",
+      "why": "DingTalk group at-mention docs: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "8764b187": {
+      "subject": "test(qq): check the websocket Close error in the send_via_http test",
+      "verdict": "not-used",
+      "why": "QQ send_via_http test: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "6692f178": {
+      "subject": "test(codex): handle model fixture response write result",
+      "verdict": "not-used",
+      "why": "Codex model fixture test: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
+    },
+    "ff2c1907": {
+      "subject": "test(antigravity): explicitly discard session close error",
+      "verdict": "not-used",
+      "why": "Antigravity test: a platform or agent we do not run (Slack and Claude Code only). Any shared file is config.example.toml."
     }
   },
   "ours": {
